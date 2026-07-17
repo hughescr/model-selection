@@ -1,0 +1,7 @@
+interface:
+  display_name: "Model Selection"
+  short_description: "Rank models by benchmarks, cost, and fit"
+  default_prompt: "Use $model-selection to compare the models available in this runtime by task-relevant benchmarks and cost per intelligence."
+
+policy:
+  allow_implicit_invocation: true

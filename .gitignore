@@ -1,0 +1,7 @@
+creds.json
+.cache/
+__pycache__/
+*.pyc
+
+# Create a free account and set the API key here
+creds.json
