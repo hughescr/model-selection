@@ -26,7 +26,7 @@ from typing import Any, Iterable
 
 
 API_BASE = "https://artificialanalysis.ai/api/v2"
-LLM_ENDPOINT = "/data/llms/models"
+LLM_ENDPOINT = "/language/models/free"
 DEFAULT_MAX_AGE = 24 * 60 * 60
 
 # These aliases intentionally include both the names used in Artificial
@@ -53,6 +53,7 @@ TOPIC_ALIASES: dict[str, list[str]] = {
         "humaneval",
     ],
     "writing": [
+        "artificial_analysis_agentic_index",
         "artificial_analysis_agents_index",
         "gdpval_aa_v2",
         "gdpval_aa",
@@ -61,6 +62,7 @@ TOPIC_ALIASES: dict[str, list[str]] = {
         "ifbench",
     ],
     "agents": [
+        "artificial_analysis_agentic_index",
         "artificial_analysis_agents_index",
         "gdpval_aa_v2",
         "gdpval_aa",
@@ -188,6 +190,38 @@ def payload_data(payload: Any) -> list[dict[str, Any]]:
     raise RuntimeError("Artificial Analysis response did not contain a data list")
 
 
+def fetch_page(key: str, page: int | None, timeout: float) -> Any:
+    url = f"{API_BASE}{LLM_ENDPOINT}"
+    if page is not None:
+        url += f"?{urllib.parse.urlencode({'page': page})}"
+    request = urllib.request.Request(
+        url, headers={"x-api-key": key, "Accept": "application/json"}, method="GET"
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def fetch_all_pages(key: str, *, timeout: float) -> Any:
+    payload = fetch_page(key, None, timeout)
+    pagination = payload.get("pagination") if isinstance(payload, dict) else None
+    if not isinstance(pagination, dict):
+        return payload
+    total_pages = pagination.get("total_pages") or 1
+    page = pagination.get("page") or 1
+    has_more = pagination.get("has_more", total_pages > page)
+    merged = list(payload_data(payload))
+    while has_more and page < total_pages:
+        page += 1
+        next_payload = fetch_page(key, page, timeout)
+        merged.extend(payload_data(next_payload))
+        next_pagination = next_payload.get("pagination") if isinstance(next_payload, dict) else None
+        has_more = next_pagination.get("has_more", False) if isinstance(next_pagination, dict) else False
+    payload["data"] = merged
+    if isinstance(payload.get("pagination"), dict):
+        payload["pagination"] = {**payload["pagination"], "page": page, "has_more": False}
+    return payload
+
+
 def fetch_models(
     *,
     cache_dir: Path | None = None,
@@ -211,13 +245,7 @@ def fetch_models(
 
     try:
         key = load_api_key(credentials)
-        request = urllib.request.Request(
-            f"{API_BASE}{LLM_ENDPOINT}",
-            headers={"x-api-key": key, "Accept": "application/json"},
-            method="GET",
-        )
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        payload = fetch_all_pages(key, timeout=timeout)
         payload_data(payload)
         envelope = {
             "cached_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -326,6 +354,13 @@ def enrich_models(
     for model in models:
         evaluations = model.get("evaluations") if isinstance(model.get("evaluations"), dict) else {}
         pricing = model.get("pricing") if isinstance(model.get("pricing"), dict) else {}
+        performance = model.get("performance") if isinstance(model.get("performance"), dict) else {}
+        output_tokens_per_second = performance.get("median_output_tokens_per_second")
+        if output_tokens_per_second is None:
+            output_tokens_per_second = model.get("median_output_tokens_per_second")
+        time_to_first_token = performance.get("median_time_to_first_token_seconds")
+        if time_to_first_token is None:
+            time_to_first_token = model.get("median_time_to_first_token_seconds")
         if metric:
             selected_score, selected_metric = metric_score(evaluations, metric)
         else:
@@ -339,8 +374,8 @@ def enrich_models(
             "model_creator": model.get("model_creator"),
             "evaluations": evaluations,
             "pricing": pricing,
-            "median_output_tokens_per_second": model.get("median_output_tokens_per_second"),
-            "median_time_to_first_token_seconds": model.get("median_time_to_first_token_seconds"),
+            "median_output_tokens_per_second": output_tokens_per_second,
+            "median_time_to_first_token_seconds": time_to_first_token,
             "selected_score": selected_score,
             "selected_metric": selected_metric,
             "blended_price_per_1m_tokens": price,
