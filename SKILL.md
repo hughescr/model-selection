@@ -1,15 +1,19 @@
 ---
 name: model-selection
-description: Select and compare language models using Artificial Analysis benchmark scores, pricing, speed, and task fit. Use when choosing a model for coding, writing, knowledge work, agents, math, science, reasoning, multilingual, or multimodal tasks; when comparing cost per intelligence; or when determining which model names and aliases are available in the current Codex or Claude Code runtime.
+description: Select and compare language models using Artificial Analysis benchmark scores, pricing, speed, and task fit. Use for explicit comparisons; new or uncertain model or effort choices; runtime alias or availability uncertainty; tasks outside a stable local routing table; repeated routing or telemetry underperformance; or periodic calibration. Do not invoke for routine Claude Agent or Workflow spawns already covered by the local table. Preserve an explicit user model or effort choice unless it is unavailable.
 ---
 
 # Model Selection
 
-Use the bundled Python client to discover local runtime options, fetch the Artificial Analysis LLM catalog with disk caching, rank models by task-relevant benchmarks, and format the complete evaluation payload for inspection.
+Use the bundled Python client to discover local runtime options, fetch the Artificial Analysis LLM catalog with disk caching, rank models by task-relevant benchmarks, and format decision-relevant evidence.
 
-## Workflow
+## Fast path and slow path
 
-1. Discover what the current host can invoke before ranking anything:
+For a routine Claude Agent or Workflow spawn covered by the stable local routing table, select that route directly: do not discover, fetch, rank, or consult Artificial Analysis. Take the slow path only for the triggers in the description. An explicit user model or effort selection wins, subject to runtime availability.
+
+## Slow-path workflow
+
+1. Discover only the affected runtime when availability, an alias, or an explicit selection is unresolved:
 
    ```bash
    python3 scripts/model_selection.py discover --runtime all --format markdown
@@ -17,7 +21,7 @@ Use the bundled Python client to discover local runtime options, fetch the Artif
 
    Codex discovery reads `CODEX_HOME/models_cache.json` and `config.toml`. Treat entries with `visibility: list` as available and mark hidden entries separately. Claude Code discovery reads `~/.claude/settings.json`, observed model fields in `~/.claude.json`, and the installed CLI help. Claude's `opus`, `sonnet`, and `haiku` names are aliases, not proof that every dated model is enabled for the account. There is no supported Claude Code command that enumerates the full entitlement set; preserve that uncertainty in the recommendation.
 
-2. Fetch the model catalog. The default credentials file is `creds.json` beside this skill, and the default cache is `.cache/llms-models.json`.
+2. Fetch the model catalog only if discovery does not resolve the decision. The default credentials file is `creds.json` beside this skill, and the default cache is `.cache/llms-models.json`.
 
    ```bash
    python3 scripts/model_selection.py fetch
@@ -26,7 +30,7 @@ Use the bundled Python client to discover local runtime options, fetch the Artif
 
    Use `ARTIFICIAL_ANALYSIS_API_KEY` or `--credentials PATH` when the key is stored elsewhere. Never print, commit, or place the key in generated markdown. The client uses a 24-hour cache by default and falls back to stale data after a failed refresh; use `--no-stale-if-error` when freshness is a hard requirement.
 
-3. Rank by the task. Prefer an Artificial Analysis category index when present; otherwise the client uses the available benchmark fields in the topic alias list and reports the fields used.
+3. Rank only if the decision remains unresolved. Prefer an Artificial Analysis category index when present; otherwise the client uses the available benchmark fields in the topic alias list and reports the fields used.
 
    ```bash
    python3 scripts/model_selection.py rank --topic coding --runtime all --format markdown
@@ -36,7 +40,7 @@ Use the bundled Python client to discover local runtime options, fetch the Artif
    python3 scripts/model_selection.py rank --topic general --sort cost-per-intelligence --format markdown
    ```
 
-4. Inspect the full benchmark breakdown before making a recommendation:
+4. Inspect a full benchmark breakdown only when it is needed to resolve a close or consequential choice:
 
    ```bash
    python3 scripts/model_selection.py rank --topic coding --metrics all --format json > /tmp/models-coding.json
@@ -45,9 +49,11 @@ Use the bundled Python client to discover local runtime options, fetch the Artif
 
    Load the relevant topic reference before interpreting a score. References are deliberately split by capability: [coding](references/benchmarks-coding.md), [writing and knowledge work](references/benchmarks-writing-knowledge.md), [math and science](references/benchmarks-math-science.md), and [agents, instruction following, and cross-cutting caveats](references/benchmarks-agents-reasoning.md). Read [Artificial Analysis API](references/artificial-analysis-api.md) for field semantics and cache behavior.
 
-5. Report a shortlist, not a single universal winner. Include model identity, runtime availability evidence, benchmark score and source field, price, speed, score coverage, and the reason the selected benchmark matches the task. Call out missing metrics, standalone versus index benchmarks, confidence intervals when available, and whether the score is model-only or agent/harness-dependent.
+5. Report a shortlist, not a single universal winner. By default, include availability, one task-relevant score and source field, and price; include speed only when latency matters. The catalog may return full records, but analyze and report only decision-relevant fields. Call out missing metrics, standalone versus index benchmarks, confidence intervals when available, and whether the score is model-only or agent/harness-dependent.
 
 ## Cost Per Intelligence
+
+Artificial Analysis API prices and benchmark `cost_per_task` values are API-comparison inputs, not Claude Max quota weights or a conversion to a weekly allowance. Use observed account meters and task telemetry for account usage; state the result as unknown when it is unpublished.
 
 Use `cost_per_intelligence_point = blended_price_per_1m_tokens / selected_score`, where the score is on a 0-100 scale. Also show `cost_per_100_intelligence_points`, which is easier to read. This is a normalized value for comparing models under the same rough token mix, not the expected price of a real user task. Real task cost depends on prompt length, output length, reasoning tokens, cache hits, provider endpoint, tool calls, and harness retries.
 
