@@ -16,7 +16,7 @@ For a routine Claude Agent or Workflow spawn covered by the stable local routing
 1. Discover only the affected runtime when availability, an alias, or an explicit selection is unresolved:
 
    ```bash
-   python3 scripts/model_selection.py discover --runtime all --format markdown
+   python3 scripts/model_selection.py discover --runtime claude --format markdown
    ```
 
    Codex discovery reads `CODEX_HOME/models_cache.json` and `config.toml`. Treat entries with `visibility: list` as available and mark hidden entries separately. Claude Code discovery reads `~/.claude/settings.json`, observed model fields in `~/.claude.json`, and the installed CLI help. Claude's `opus`, `sonnet`, and `haiku` names are aliases, not proof that every dated model is enabled for the account. There is no supported Claude Code command that enumerates the full entitlement set; preserve that uncertainty in the recommendation.
