@@ -1,6 +1,6 @@
 ---
 name: model-selection
-description: Select and compare language models using Artificial Analysis benchmark scores, pricing, speed, and task fit. Use for explicit comparisons; new or uncertain model or effort choices; runtime alias or availability uncertainty; tasks outside a stable local routing table; repeated routing or telemetry underperformance; or periodic calibration. Do not invoke for routine Claude Agent or Workflow spawns already covered by the local table. Preserve an explicit user model or effort choice unless it is unavailable.
+description: Select and compare language models using Artificial Analysis benchmark scores, pricing, speed, and task fit. Use for explicit comparisons; new or uncertain model or effort choices; runtime alias or availability uncertainty; tasks outside a stable local routing table; repeated routing or telemetry underperformance; or periodic calibration. Do not invoke for routine Agent or Workflow spawns already covered by the local table, including cross-family verification pairings the table already names. Preserve an explicit user model or effort choice unless it is unavailable.
 ---
 
 # Model Selection
@@ -9,7 +9,51 @@ Use the bundled Python client to discover local runtime options, fetch the Artif
 
 ## Fast path and slow path
 
-For a routine Claude Agent or Workflow spawn covered by the stable local routing table, select that route directly: do not discover, fetch, rank, or consult Artificial Analysis. Take the slow path only for the triggers in the description. An explicit user model or effort selection wins, subject to runtime availability.
+For a routine Agent or Workflow spawn covered by the stable local routing table, select that route directly: do not discover, fetch, rank, or consult Artificial Analysis. This includes picking a cross-family challenger from the pairings below — that is a table lookup, not a slow-path decision. Take the slow path only for the triggers in the description. An explicit user model or effort selection wins, subject to runtime availability.
+
+## Local gateway routes
+
+The `gpt-*` rows of the local routing table reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription rather than the Anthropic account. Route agents live in `~/.claude/agents/` alongside the Claude routes; this skill's `agents/` directory holds a Codex interface manifest for the skill itself and is not a route directory. Do not define route agents here.
+
+| Route | Model | Use for | Peer Claude route | Default effort | Supported efforts | Confidence |
+|---|---|---|---|---|---|---|
+| `gpt-sol-high`, `gpt-sol-xhigh` | `sol` (`gpt-5.6-sol`) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
+| `gpt-sol-medium` | `sol` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
+| `gpt-terra-medium`, `gpt-terra-high` | `terra` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
+| `gpt-luna-medium` | `luna` (`gpt-5.6-luna`) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
+| `gpt-luna-low` | `luna` | Cheap mechanical work and summaries. | `haiku-summary`, `haiku-basic` | `low` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
+| `gpt-spark-high` | `spark` (`gpt-5.3-codex-spark`) | Tight edit-test-lint loops and executing a written checklist, at roughly ten times the throughput of a reasoning model. Never planning, review, or long jobs. | None. Speed peer of `haiku-basic`, coding-accuracy peer of `sonnet-medium`. | `high` | `low`-`xhigh` | Speed and limits are well sourced; the peering is inference. |
+
+Facts that constrain these routes:
+
+- **Context is 272k tokens, not the 1M the API docs advertise** — 128k for `gpt-spark-high`, which fills in about two minutes at its throughput. Never plan a larger task onto a `gpt-*` route.
+- **Keep luna off long context entirely.** Its long-context recall is 41.3% against sol's 91.5%, so it degrades quietly rather than failing.
+- **Effort forwarding is unverified.** `sol` defaults to `low` at the proxy, so if the harness drops the frontmatter `effort`, a consequential-review route silently becomes a cheap one. Confirm against the proxy's per-request log before trusting `gpt-sol-*` for consequential work; if effort does not arrive, use the effort-suffixed model name instead.
+- **`ultra` is not a valid frontmatter effort.** Reach it only through a suffixed model name (`sol-ultra`), and expect roughly triple the cost for one to three points. OpenAI documents `ultra` as sol-only; the live catalog also accepts it on terra, which no public source confirms.
+- The proxy accepts a bare alias (`sol`), a pinned name (`sol-5.6`), a raw slug (`gpt-5.6-sol`), or an effort suffix (`sol-high`); the model picker shows the same models as `anthropic-compat.<alias>`.
+- **Do not route to `gpt-5.5`, `gpt-5.4`, or `gpt-5.4-mini`** — all retire on 2026-08-31, and OpenAI's own migration advice is terra and luna. Do not route to `codex-auto-review`: it is hidden and undocumented.
+
+For availability, prefer the proxy's own state over the discovery step below: `GET /healthz` reports Codex auth state, catalog state and model count, transport kind, and quota. The live catalog is the authority on which models and efforts exist. When the proxy is down, every `gpt-*` route fails immediately and the Claude routes are unaffected.
+
+## Cross-family verification
+
+Verify across families. A same-family reviewer shares the proposer's blind spots, so first-party work by a Claude model is verified or challenged by a GPT model, and first-party work by a GPT model is verified or challenged by a Claude model. No model reviews its own output, and no family is the only reviewer of its own work.
+
+| Proposer | Challenger | Escalate to |
+|---|---|---|
+| `opus-high`, `fable-*` | `gpt-sol-high` | `gpt-sol-xhigh` |
+| `opus-medium` | `gpt-sol-medium` | `gpt-sol-high` |
+| `sonnet-high` | `gpt-terra-high` | `gpt-sol-medium` |
+| `sonnet-medium` | `gpt-luna-medium` | `gpt-terra-high` |
+| `haiku-summary`, `haiku-basic` | `gpt-luna-low` | `gpt-luna-medium` |
+| `gpt-sol-high`, `gpt-sol-xhigh` | `opus-high` | `fable-high` |
+| `gpt-sol-medium` | `opus-medium` | `opus-high` |
+| `gpt-terra-medium`, `gpt-terra-high` | `sonnet-high` | `opus-medium` |
+| `gpt-luna-*`, `gpt-spark-high` | `sonnet-medium` | `sonnet-high` |
+
+Size the challenger to the cost of being wrong, not to the proposer's rank. Treat a cross-family disagreement as a finding to resolve, not a tie to split: escalate one rung and report both positions. `gpt-spark-high` proposes and executes but never reviews.
+
+When the proxy is down, use the `codex` relay agent for a genuine cross-family opinion. Falling back to a stronger same-family route is acceptable only if the report says the verification was same-family.
 
 ## Slow-path workflow
 
@@ -19,7 +63,7 @@ For a routine Claude Agent or Workflow spawn covered by the stable local routing
    python3 scripts/model_selection.py discover --runtime claude --format markdown
    ```
 
-   Codex discovery reads `CODEX_HOME/models_cache.json` and `config.toml`. Treat entries with `visibility: list` as available and mark hidden entries separately. Claude Code discovery reads `~/.claude/settings.json`, observed model fields in `~/.claude.json`, and the installed CLI help. Claude's `opus`, `sonnet`, and `haiku` names are aliases, not proof that every dated model is enabled for the account. There is no supported Claude Code command that enumerates the full entitlement set; preserve that uncertainty in the recommendation.
+   Codex discovery reads `CODEX_HOME/models_cache.json` and `config.toml`. Treat entries with `visibility: list` as available and mark hidden entries separately. Claude Code discovery reads `~/.claude/settings.json`, observed model fields in `~/.claude.json`, and the installed CLI help. Claude's `opus`, `sonnet`, and `haiku` names are aliases, not proof that every dated model is enabled for the account. There is no supported Claude Code command that enumerates the full entitlement set; preserve that uncertainty in the recommendation. Neither runtime file knows about the gateway: when Claude Code is pointed at `utraque`, the Codex models are reachable from inside Claude Code as well, and the proxy's `/healthz` is the authority on which of them are live.
 
 2. Fetch the model catalog only if discovery does not resolve the decision. The default credentials file is `creds.json` beside this skill, and the default cache is `.cache/llms-models.json`.
 
@@ -66,6 +110,7 @@ The free endpoint's `price_1m_blended_3_to_1` is used as reported. If it is abse
 - Do not treat writing quality as a pure scalar. GDPval and Briefcase involve deliverables and knowledge work; IFBench measures instruction compliance; neither fully captures voice, originality, factual editing, or audience fit.
 - Prefer fresh or decontaminated evaluations when models are close. Static benchmark scores can be inflated by training-data overlap, prompt sensitivity, grader choice, or harness differences.
 - Avoid mixing raw percentages, Elo ratings, and index values as if they share the same meaning. The formatter normalizes 0-1 pass rates to display percentages but retains the original raw values in JSON.
+- Choose a reviewer or challenger by family first and rank second. Take the pairing from the cross-family table above; a same-family review is a weaker signal at the same price.
 - When no local runtime match exists, distinguish “best in the catalog” from “invokable here.” A model may be benchmarked by Artificial Analysis without being selectable in the current agent product.
 - Cite Artificial Analysis when sharing data from the free API. The API documentation requires attribution.
 
