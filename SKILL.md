@@ -59,9 +59,9 @@ Verify across families. A same-family reviewer shares the proposer's blind spots
 
 Size the challenger to the cost of being wrong, not to the proposer's rank. Treat a cross-family disagreement as a finding to resolve, not a tie to split: escalate one rung and report both positions. `gpt-spark-high` proposes and executes but never reviews.
 
-This table is the authority for the review-changes skill's mandatory GPT reviewer: take the session's own model as the proposer and read off the challenger.
+This table is the authority for choosing the single verifier in the review-changes skill: take the session's own model as the proposer and read off the challenger. That verifier is advised for substantial changes, not required for every change.
 
-When the proxy is unavailable — not configured, or configured and down — use the `codex` relay agent for a genuine cross-family opinion. Falling back to a stronger same-family route is acceptable only if the report says the verification was same-family. Note that the relay shares one Codex credential with the proxy, so it is a fallback for a stopped proxy, not for a stale `codex login`.
+When the proxy is unavailable — not configured, or configured and down — no cross-family route exists. Fall back to a stronger same-family route and state in the report that the verification was same-family. The proxy authenticates with the Codex subscription credential, so a stale credential is fixed with `codex login`, not by rerouting.
 
 ## Slow-path workflow
 
