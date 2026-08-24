@@ -15,23 +15,29 @@ For a routine Agent or Workflow spawn covered by the stable local routing table,
 
 The `gpt-*` rows of the local routing table reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription rather than the Anthropic account. Route agents live in `~/.claude/agents/` alongside the Claude routes; this skill's `agents/` directory holds a Codex interface manifest for the skill itself and is not a route directory. Do not define route agents here.
 
-| Route | Model | Use for | Peer Claude route | Default effort | Supported efforts | Confidence |
-|---|---|---|---|---|---|---|
-| `gpt-sol-high`, `gpt-sol-xhigh` | `sol` (`gpt-5.6-sol`) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
-| `gpt-sol-medium` | `sol` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
-| `gpt-terra-medium`, `gpt-terra-high` | `terra` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
-| `gpt-luna-medium` | `luna` (`gpt-5.6-luna`) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
-| `gpt-luna-low` | `luna` | Cheap mechanical work and summaries. | `haiku-summary`, `haiku-basic` | `low` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
-| `gpt-spark-high` | `spark` (`gpt-5.3-codex-spark`) | Tight edit-test-lint loops and executing a written checklist, at roughly ten times the throughput of a reasoning model. Never planning, review, or long jobs. | None. Speed peer of `haiku-basic`, coding-accuracy peer of `sonnet-medium`. | `high` | `low`-`xhigh` | Speed and limits are well sourced; the peering is inference. |
+"Route effort" is what the route actually runs at, and it is carried by the suffixed model
+name the agent file sends — not by the frontmatter `effort` key. "Proxy default" is what
+the same model would run at if it were named bare, which is why the suffix is mandatory.
+
+| Route | Model name sent | Use for | Peer Claude route | Route effort | Proxy default if named bare | Supported efforts | Confidence |
+|---|---|---|---|---|---|---|---|
+| `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (`gpt-5.6-sol`) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high`, `xhigh` | `low` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
+| `gpt-sol-medium` | `sol-medium` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
+| `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
+| `gpt-luna-medium` | `luna-medium` (`gpt-5.6-luna`) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
+| `gpt-luna-low` | `luna-low` | Cheap mechanical work and summaries. | `haiku-summary`, `haiku-basic` | `low` | `medium` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
+| `gpt-spark-high` | `spark-high` (`gpt-5.3-codex-spark`) | Tight edit-test-lint loops and executing a written checklist, at roughly ten times the throughput of a reasoning model. Never planning, review, or long jobs. | None. Speed peer of `haiku-basic`, coding-accuracy peer of `sonnet-medium`. | `high` | `high` | `low`-`xhigh` | Speed and limits are well sourced; the peering is inference. |
 
 Facts that constrain these routes:
 
 - **Context is 272k tokens, not the 1M the API docs advertise** — 128k for `gpt-spark-high`, which fills in about two minutes at its throughput. Never plan a larger task onto a `gpt-*` route.
 - **Keep luna off long context entirely.** Its long-context recall is 41.3% against sol's 91.5%, so it degrades quietly rather than failing.
-- **Effort forwarding is unverified.** `sol` defaults to `low` at the proxy, so if the harness drops the frontmatter `effort`, a consequential-review route silently becomes a cheap one. Confirm against the proxy's per-request log before trusting `gpt-sol-*` for consequential work; if effort does not arrive, use the effort-suffixed model name instead.
+- **A suffixed model name is the only way to set effort.** Frontmatter `effort` never reaches the proxy: utraque's `chooseEffort` takes a model-name suffix, then two `Options` fields that no non-test code assigns, then the catalog default — there is no request field an Anthropic-shaped client can set. So the agent files send `sol-high`, `terra-medium` and so on, and the frontmatter `effort` key is bookkeeping that satisfies the CLAUDE.md pin rule. If a route is ever changed to a bare alias it silently drops to the proxy default — `low` for sol, which is the worst case on a consequential-review route.
 - **`ultra` is not a valid frontmatter effort.** Reach it only through a suffixed model name (`sol-ultra`), and expect roughly triple the cost for one to three points. OpenAI documents `ultra` as sol-only; the live catalog also accepts it on terra, which no public source confirms.
 - The proxy accepts a bare alias (`sol`), a pinned name (`sol-5.6`), a raw slug (`gpt-5.6-sol`), or an effort suffix (`sol-high`); the model picker shows the same models as `anthropic-compat.<alias>`.
 - **Do not route to `gpt-5.5`, `gpt-5.4`, or `gpt-5.4-mini`** — all retire on 2026-08-31, and OpenAI's own migration advice is terra and luna. Do not route to `codex-auto-review`: it is hidden and undocumented.
+
+These routes are reachable only when `env.ANTHROPIC_BASE_URL` in `~/.claude/settings.json` names the proxy. That key is not set by default: check it before selecting a `gpt-*` route, because without it the model name goes to `api.anthropic.com` and is rejected as unknown. See `~/.claude/UTRAQUE-SETTINGS-DELTA.md`.
 
 For availability, prefer the proxy's own state over the discovery step below: `GET /healthz` reports Codex auth state, catalog state and model count, transport kind, and quota. The live catalog is the authority on which models and efforts exist. When the proxy is down, every `gpt-*` route fails immediately and the Claude routes are unaffected.
 
@@ -53,7 +59,9 @@ Verify across families. A same-family reviewer shares the proposer's blind spots
 
 Size the challenger to the cost of being wrong, not to the proposer's rank. Treat a cross-family disagreement as a finding to resolve, not a tie to split: escalate one rung and report both positions. `gpt-spark-high` proposes and executes but never reviews.
 
-When the proxy is down, use the `codex` relay agent for a genuine cross-family opinion. Falling back to a stronger same-family route is acceptable only if the report says the verification was same-family.
+This table is the authority for the review-changes skill's mandatory GPT reviewer: take the session's own model as the proposer and read off the challenger.
+
+When the proxy is unavailable — not configured, or configured and down — use the `codex` relay agent for a genuine cross-family opinion. Falling back to a stronger same-family route is acceptable only if the report says the verification was same-family. Note that the relay shares one Codex credential with the proxy, so it is a fallback for a stopped proxy, not for a stale `codex login`.
 
 ## Slow-path workflow
 
