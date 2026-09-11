@@ -13,53 +13,92 @@ For a routine spawn covered by the routing table in `~/.claude/CLAUDE.md`, selec
 
 ## Local gateway routes
 
-The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription. Route agents live in `~/.claude/agents/`; this skill's `agents/` directory is a Codex interface manifest, not a route directory — do not define routes here.
+The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription. The `deepseek-*` routes reach DeepSeek's Anthropic-compatible endpoint over the same proxy and spend a prepaid DeepSeek API balance, so they are the only metered routes. Route agents live in `~/.claude/agents/`; this skill's `agents/` directory is a Codex interface manifest, not a route directory — do not define routes here.
 
-"Route effort" is what the route actually runs at, carried by the suffixed model name the agent file sends — not by the frontmatter `effort` key. "Proxy default" is what the same model runs at if named bare.
+"Route effort" is what the route actually runs at. On the Codex leg it is carried by the suffixed model name the agent file sends, not by the frontmatter `effort` key; on the DeepSeek leg it is the frontmatter `effort` key, which Claude Code sends as the request's effort field and the proxy forwards. "Proxy default" is what the same model runs at if named bare.
 
 | Route | Model name sent | Use for | Peer Claude route | Route effort | Proxy default if named bare | Supported efforts | Confidence |
 |---|---|---|---|---|---|---|---|
+| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `fable-high`, `fable-xhigh` | `medium`, `high`, `xhigh` | unknown | unknown until the catalog lists it | Index position is strong (see snapshot); supported efforts, proxy default, and context window are unverified because the backend is not yet live. |
 | `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (`gpt-5.6-sol`) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high`, `xhigh` | `low` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
 | `gpt-sol-medium` | `sol-medium` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
 | `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
 | `gpt-luna-medium` | `luna-medium` (`gpt-5.6-luna`) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
 | `gpt-luna-low` | `luna-low` | Cheap mechanical work and summaries. | `haiku-summary`, `haiku-basic` | `low` | `medium` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
-| `gpt-spark-high` | `spark-high` (`gpt-5.3-codex-spark`) | Tight edit-test-lint loops and executing a written checklist, at roughly ten times the throughput of a reasoning model. Never planning, review, or long jobs. | None. Speed peer of `haiku-basic`, coding-accuracy peer of `sonnet-medium`. | `high` | `high` | `low`-`xhigh` | Speed and limits are well sourced; the peering is inference. |
+| `deepseek-flash-low`, `deepseek-flash-medium`, `deepseek-flash-high` | `deepseek-flash` (DeepSeek V4.1 Flash) plus frontmatter effort | The default DeepSeek route and the cheapest third-family challenger; peers Haiku, `sonnet-medium`, and `sonnet-high` by tier. | `haiku-*`, `sonnet-medium`, `sonnet-high` | `low`, `medium`, `high` | DeepSeek's own default | forwarded unvalidated; `low`-`high` exercised | Index position is strong; the per-tier peering is inferred from the single max-effort point AA publishes. |
+| `deepseek-v4-pro-low`, `deepseek-v4-pro-medium`, `deepseek-v4-pro-high` | `deepseek-v4-pro` (DeepSeek V4 Pro 0813) plus frontmatter effort | Only when a task needs something the index does not measure; on the index Flash dominates it. No image input. | `sonnet-medium`, `opus-medium`, `opus-high` | `low`, `medium`, `high` | DeepSeek's own default | forwarded unvalidated; `low`-`high` exercised | The peering is a role placeholder, not evidence: AA puts Pro below Flash at over twice the cost. |
 
 Facts that constrain these routes:
 
-- **Context is 272k tokens, not the 1M the API docs advertise** — 128k for `gpt-spark-high`, which fills in about two minutes at its throughput. Never plan a larger task onto a `gpt-*` route.
+- **Context is 272k tokens on the Codex leg, not the 1M the API docs advertise.** Never plan a larger task onto a `gpt-*` route. DeepSeek and astra windows are unverified.
 - **Keep luna off long context.** Its long-context recall is 41.3% against sol's 91.5%, so it degrades quietly rather than failing.
-- **A suffixed model name is the only way to set effort.** Frontmatter `effort` never reaches the proxy: utraque's `chooseEffort` reads a model-name suffix, then two `Options` fields no non-test code assigns, then the catalog default. So agent files send `sol-high`, `terra-medium`, and the frontmatter `effort` key is bookkeeping for the CLAUDE.md pin rule. A bare alias silently drops to the proxy default — `low` for sol, the worst case on a consequential-review route.
+- **On the Codex leg a suffixed model name is the only way to set effort.** Frontmatter `effort` never reaches that leg: utraque's `chooseEffort` reads a model-name suffix, then two `Options` fields no non-test code assigns, then the catalog default. So agent files send `sol-high`, `terra-medium`, and the frontmatter `effort` key is bookkeeping for the CLAUDE.md pin rule. A bare alias silently drops to the proxy default — `low` for sol, the worst case on a consequential-review route.
+- **On the DeepSeek leg the model name must be exact** (`deepseek-flash`, `deepseek-v4-pro`; a suffix like `deepseek-flash-high` is rejected as unrecognised) and effort travels in the frontmatter key instead. The proxy forwards the effort field as-is, so a value DeepSeek does not honor fails or degrades upstream rather than at the proxy.
 - **`ultra` is not a valid frontmatter effort.** Reach it only via a suffixed name (`sol-ultra`), at roughly triple the cost for one to three points. OpenAI documents `ultra` as sol-only; the live catalog also accepts it on terra, which no public source confirms.
 - The proxy accepts a bare alias (`sol`), a pinned name (`sol-5.6`), a raw slug (`gpt-5.6-sol`), or an effort suffix (`sol-high`); the model picker shows these as `anthropic-compat.<alias>`.
-- **Do not route to `gpt-5.5`, `gpt-5.4`, or `gpt-5.4-mini`** — all retire 2026-08-31; OpenAI's migration advice is terra and luna. Do not route to `codex-auto-review`: hidden and undocumented.
+- **Do not route to `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, or `gpt-5.3-codex-spark`.** The first three retire 2026-08-31 and OpenAI's migration advice is terra and luna; spark is excluded by choice and its agent was removed 2026-09-11. Do not route to `codex-auto-review`: hidden and undocumented.
 
 These routes work only when `ANTHROPIC_BASE_URL` names the proxy. The `claude` alias (`claude-smart.sh`) sets it at launch when the proxy answers healthy, so check the environment variable, not `settings.json`. Without it the model name reaches `api.anthropic.com` and is rejected. See `~/.claude/UTRAQUE-SETTINGS-DELTA.md`.
 
-For availability prefer the proxy's own state: `GET /healthz` reports Codex auth, catalog state and model count, transport, and quota. The live catalog is the authority on which models and efforts exist. When the proxy is down every `gpt-*` route fails immediately; Claude routes are unaffected.
+For availability prefer the proxy's own state: `GET /healthz` reports Codex auth, catalog state and model count, transport, and quota, and `GET /v1/models` lists what is routable now. The live catalog is the authority on which models and efforts exist; DeepSeek rows appear only when a DeepSeek key is configured. When the proxy is down every `gpt-*` and `deepseek-*` route fails immediately; Claude routes are unaffected.
+
+### Intelligence-cost snapshot
+
+Artificial Analysis Intelligence Index against cost per index task, read from the 2026-09-11 chart. Values are approximate chart readings, not API fields; AA's "medium" and "max" are its own effort settings, not this table's tiers. Cost is metered only on the DeepSeek leg; for the two subscription legs treat it as a quota-burn proxy.
+
+| Model (AA effort) | Index | Cost/task | On Pareto line |
+|---|---|---|---|
+| Claude Fable 5.1 (max with fallback) | 53 | $8 | no |
+| GPT-6 Astra (max) | 53 | $3.2 | yes |
+| Claude Opus 5 (max) | 51 | $6 | no |
+| GPT-6 Astra (medium) | 50 | $1.25 | yes |
+| Claude Fable 5.1 (medium with fallback) | 49 | $3.2 | no |
+| GPT-5.6 Sol (max) | 47 | $2.1 | no |
+| Claude Opus 5 (medium) | 45 | $2.3 | no |
+| GPT-5.6 Terra (max) | 42 | $1.4 | no |
+| GPT-5.6 Sol (medium) | 39.5 | $0.5 | no |
+| DeepSeek V4.1 Flash (max) | 39.5 | $0.28 | no, just under |
+| GPT-5.6 Luna (max) | 37.5 | $0.19 | yes |
+| DeepSeek V4 Pro 0813 (max) | 36 | $0.68 | no |
+| GPT-5.6 Terra (medium) | 30.5 | $0.19 | no |
+| Claude Sonnet 5 (medium) | 28.5 | $1 | no |
+| GPT-5.6 Luna (medium) | 25.5 | $0.013 | yes |
+
+What follows from it:
+
+- **Astra at medium already beats sol at max** by about three index points at well under its cost, and astra at max matches Fable 5.1 at max. Once live, `gpt-astra-medium` is the cheapest route above sol and the natural consequential challenger; sol at high or xhigh becomes the fallback, not the first choice.
+- **Flash is the DeepSeek default.** V4.1 Flash at max ties sol at medium on the index at roughly half the cost, and sits above luna at max. V4 Pro is below Flash and costs over twice as much, so route to it only for a reason the index does not capture.
+- **Terra at medium is dominated by luna at max at the same cost.** Prefer `gpt-terra-high` for terra work; if a luna-tier price is the goal, luna's long-context weakness still applies.
+- **Sonnet 5 at medium is far off the frontier** on this chart. Its value on the Claude leg is harness fit and the Max subscription, not index per dollar; do not pick it for a metered comparison.
+- Every Claude point is above the frontier on cost. That is expected for subscription-billed routes and is not a reason to move Claude proposers off the Claude leg.
 
 ## Cross-family verification
 
-A same-family reviewer shares the proposer's blind spots, so Claude work is challenged by a GPT model and GPT work by a Claude model. No model reviews its own output.
+A same-family reviewer shares the proposer's blind spots, so Claude work is challenged by a GPT model and GPT work by a Claude model. No model reviews its own output. DeepSeek is the third family: use it as the challenger when the proposer's family and the GPT family have already disagreed, or when the work is metered-cheap enough that Flash is the right price for a second opinion.
 
 | Proposer | Challenger | Escalate to |
 |---|---|---|
-| `opus-high`, `fable-*` | `gpt-sol-high` | `gpt-sol-xhigh` |
+| `opus-high`, `fable-*` | `gpt-astra-medium` once live, else `gpt-sol-high` | `gpt-astra-high` once live, else `gpt-sol-xhigh` |
 | `opus-medium` | `gpt-sol-medium` | `gpt-sol-high` |
 | `sonnet-high` | `gpt-terra-high` | `gpt-sol-medium` |
 | `sonnet-medium` | `gpt-luna-medium` | `gpt-terra-high` |
 | `haiku-summary`, `haiku-basic` | `gpt-luna-low` | `gpt-luna-medium` |
+| `gpt-astra-*` | `fable-high` | `fable-xhigh` |
 | `gpt-sol-high`, `gpt-sol-xhigh` | `opus-high` | `fable-high` |
 | `gpt-sol-medium` | `opus-medium` | `opus-high` |
 | `gpt-terra-medium`, `gpt-terra-high` | `sonnet-high` | `opus-medium` |
-| `gpt-luna-*`, `gpt-spark-high` | `sonnet-medium` | `sonnet-high` |
+| `gpt-luna-*` | `sonnet-medium` | `sonnet-high` |
+| `deepseek-v4-pro-high`, `deepseek-flash-high` | `opus-high` | `gpt-sol-high` |
+| `deepseek-*-medium` | `sonnet-high` | `opus-medium` |
+| `deepseek-*-low` | `sonnet-medium` | `sonnet-high` |
 
-Size the challenger to the cost of being wrong, not to the proposer's rank. Treat a cross-family disagreement as a finding to resolve, not a tie to split: escalate one rung and report both positions. `gpt-spark-high` proposes and executes but never reviews.
+Third-family tiebreak: when proposer and challenger disagree and the escalation rung would be the same family as one of them, use `deepseek-flash-high` for Sonnet-tier work and `deepseek-v4-pro-high` for Opus-tier work instead, and report all three positions.
+
+Size the challenger to the cost of being wrong, not to the proposer's rank. Treat a cross-family disagreement as a finding to resolve, not a tie to split: escalate one rung and report both positions.
 
 The review-changes skill picks its single verifier from this table, and that verifier is advised for substantial changes, not required for every change.
 
-With the proxy unavailable there is no cross-family route: fall back to a stronger same-family route and report the verification as same-family. The proxy uses the Codex subscription credential, so a stale one is fixed with `codex login`, not by rerouting.
+With the proxy unavailable there is no cross-family route: fall back to a stronger same-family route and report the verification as same-family. The proxy uses the Codex subscription credential for the GPT leg, so a stale one is fixed with `codex login`, not by rerouting; the DeepSeek leg needs a configured prepaid key and answers `503` without one.
 
 ## Slow-path workflow
 
