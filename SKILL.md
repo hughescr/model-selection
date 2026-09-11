@@ -19,7 +19,7 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 
 | Route | Model name sent | Use for | Peer Claude route | Route effort | Proxy default if named bare | Supported efforts | Confidence |
 |---|---|---|---|---|---|---|---|
-| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `fable-high`, `fable-xhigh` | `medium`, `high`, `xhigh` | unknown | unknown until the catalog lists it | Index position is strong (see snapshot); supported efforts, proxy default, and context window are unverified because the backend is not yet live. |
+| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `fable-high`, `fable-xhigh` | `medium`, `high`, `xhigh` | `medium` | `low`-`ultra` | Strong: on the index astra at medium beats sol at max and astra at max ties Fable 5.1 at max. Route verified live 2026-09-11; catalog says 272k context. |
 | `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (`gpt-5.6-sol`) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high`, `xhigh` | `low` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
 | `gpt-sol-medium` | `sol-medium` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
 | `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
@@ -30,7 +30,7 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 
 Facts that constrain these routes:
 
-- **Context is 272k tokens on the Codex leg, not the 1M the API docs advertise.** Never plan a larger task onto a `gpt-*` route. DeepSeek and astra windows are unverified.
+- **Context is 272k tokens on the Codex leg, not the 1M the API docs advertise.** Never plan a larger task onto a `gpt-*` route; the catalog gives astra the same 272k. DeepSeek windows are unverified.
 - **Keep luna off long context.** Its long-context recall is 41.3% against sol's 91.5%, so it degrades quietly rather than failing.
 - **On the Codex leg a suffixed model name is the only way to set effort.** Frontmatter `effort` never reaches that leg: utraque's `chooseEffort` reads a model-name suffix, then two `Options` fields no non-test code assigns, then the catalog default. So agent files send `sol-high`, `terra-medium`, and the frontmatter `effort` key is bookkeeping for the CLAUDE.md pin rule. A bare alias silently drops to the proxy default — `low` for sol, the worst case on a consequential-review route.
 - **On the DeepSeek leg the model name must be exact** (`deepseek-flash`, `deepseek-v4-pro`; a suffix like `deepseek-flash-high` is rejected as unrecognised) and effort travels in the frontmatter key instead. The proxy forwards the effort field as-is, so a value DeepSeek does not honor fails or degrades upstream rather than at the proxy.
@@ -66,7 +66,7 @@ Artificial Analysis Intelligence Index against cost per index task, read from th
 
 What follows from it:
 
-- **Astra at medium already beats sol at max** by about three index points at well under its cost, and astra at max matches Fable 5.1 at max. Once live, `gpt-astra-medium` is the cheapest route above sol and the natural consequential challenger; sol at high or xhigh becomes the fallback, not the first choice.
+- **Astra at medium already beats sol at max** by about three index points at well under its cost, and astra at max matches Fable 5.1 at max. `gpt-astra-medium` is the cheapest route above sol and the natural consequential challenger; sol at high or xhigh is the fallback, not the first choice.
 - **Flash is the DeepSeek default.** V4.1 Flash at max ties sol at medium on the index at roughly half the cost, and sits above luna at max. V4 Pro is below Flash and costs over twice as much, so route to it only for a reason the index does not capture.
 - **Terra at medium is dominated by luna at max at the same cost.** Prefer `gpt-terra-high` for terra work; if a luna-tier price is the goal, luna's long-context weakness still applies.
 - **Sonnet 5 at medium is far off the frontier** on this chart. Its value on the Claude leg is harness fit and the Max subscription, not index per dollar; do not pick it for a metered comparison.
@@ -78,7 +78,7 @@ A same-family reviewer shares the proposer's blind spots, so Claude work is chal
 
 | Proposer | Challenger | Escalate to |
 |---|---|---|
-| `opus-high`, `fable-*` | `gpt-astra-medium` once live, else `gpt-sol-high` | `gpt-astra-high` once live, else `gpt-sol-xhigh` |
+| `opus-high`, `fable-*` | `gpt-astra-medium` | `gpt-astra-high` |
 | `opus-medium` | `gpt-sol-medium` | `gpt-sol-high` |
 | `sonnet-high` | `gpt-terra-high` | `gpt-sol-medium` |
 | `sonnet-medium` | `gpt-luna-medium` | `gpt-terra-high` |
