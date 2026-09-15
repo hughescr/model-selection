@@ -24,7 +24,7 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 | `gpt-sol-medium` | `sol-medium` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
 | `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
 | `gpt-luna-medium` | `luna-medium` (`gpt-5.6-luna`) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
-| `gpt-luna-low` | `luna-low` | Cheap mechanical work and summaries. | `haiku-summary`, `haiku-basic` | `low` | `medium` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
+| `gpt-luna-low` | `luna-low` | Cheap mechanical work and summaries. | `haiku-basic` | `low` | `medium` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
 | `deepseek-flash-low`, `deepseek-flash-medium`, `deepseek-flash-high` | `deepseek-flash` (DeepSeek V4.1 Flash) plus frontmatter effort | The default DeepSeek route and the cheapest third-family challenger; peers Haiku, `sonnet-medium`, and `sonnet-high` by tier. | `haiku-*`, `sonnet-medium`, `sonnet-high` | `low`, `medium`, `high` | DeepSeek's own default | forwarded unvalidated; `low`-`high` exercised | Index position is strong; the per-tier peering is inferred from the single max-effort point AA publishes. |
 | `deepseek-v4-pro-low`, `deepseek-v4-pro-medium`, `deepseek-v4-pro-high` | `deepseek-v4-pro` (DeepSeek V4 Pro 0813) plus frontmatter effort | Only when a task needs something the index does not measure; on the index Flash dominates it. No image input. | `sonnet-medium`, `opus-medium`, `opus-high` | `low`, `medium`, `high` | DeepSeek's own default | forwarded unvalidated; `low`-`high` exercised | The peering is a role placeholder, not evidence: AA puts Pro below Flash at over twice the cost. |
 
@@ -82,7 +82,7 @@ A same-family reviewer shares the proposer's blind spots, so Claude work is chal
 | `opus-medium` | `gpt-sol-medium` | `gpt-sol-high` |
 | `sonnet-high` | `gpt-terra-high` | `gpt-sol-medium` |
 | `sonnet-medium` | `gpt-luna-medium` | `gpt-terra-high` |
-| `haiku-summary`, `haiku-basic` | `gpt-luna-low` | `gpt-luna-medium` |
+| `haiku-basic` | `gpt-luna-low` | `gpt-luna-medium` |
 | `gpt-astra-*` | `fable-high` | `fable-xhigh` |
 | `gpt-sol-high`, `gpt-sol-xhigh` | `opus-high` | `fable-high` |
 | `gpt-sol-medium` | `opus-medium` | `opus-high` |
