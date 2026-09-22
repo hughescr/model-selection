@@ -19,7 +19,7 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 
 | Route | Model name sent | Use for | Peer Claude route | Route effort | Proxy default if named bare | Supported efforts | Confidence |
 |---|---|---|---|---|---|---|---|
-| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `fable-high`, `fable-xhigh` | `medium`, `high`, `xhigh` | `medium` | `low`-`ultra` | Strong: on the index astra at medium beats sol at max and astra at max ties Fable 5.1 at max. Route verified live 2026-09-11; catalog says 272k context. |
+| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `opus-high`, `opus-xhigh` | `medium`, `high`, `xhigh` | `medium` | `low`-`ultra` | Mixed: astra at medium still beats sol at max, but since Opus 5.5 (2026-09-22) astra max (53) sits below its Claude peer `opus-high` (54) — no Astra effort now reaches `opus-high`. Route verified live 2026-09-11; catalog says 272k context. |
 | `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (`gpt-5.6-sol`) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high`, `xhigh` | `low` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
 | `gpt-sol-medium` | `sol-medium` | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
 | `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Strong on positioning: terra scores within 1.4 coding points of sol at under half the cost. |
@@ -64,13 +64,31 @@ Artificial Analysis Intelligence Index against cost per index task, read from th
 | Claude Sonnet 5 (medium) | 28.5 | $1 | no |
 | GPT-5.6 Luna (medium) | 25.5 | $0.013 | yes |
 
+**2026-09-22 update — Opus 5.5.** `claude-opus-5-5` ships with 1M context (AA) and efforts `low` / `medium` (default) / `high` / `xhigh` / `max`; the `opus` alias now resolves to it (this session runs on it; not independently verified from a spawned agent). Anthropic says it "performs at the level of Claude Fable 5.1 on most work." AA Intelligence Index v4.3.2 by effort:
+
+| Effort | Opus 5.5 | Fable 5.1 | GPT-6 Astra | Opus 5 |
+|---|---|---|---|---|
+| max | 58 | 53 | 53 | 51 |
+| xhigh | 56 | 53 | 52 | 51 |
+| high | 54 | 51 | 51 | 49 |
+| medium | 51 | 49 | 50 | – |
+| low | – | 47 | 46 | – |
+
+AA has not published Opus 5.5 cost (its page shows "N/A"). **Estimate**, to replace once AA publishes: Anthropic's Terminal-Bench 4.0 cost-per-attempt × 0.38, the mean AA:Anthropic cost ratio for Fable 5.1 and Opus 5 at medium and max (range 0.33-0.41; GPT ratios were 0.20-0.32 and too unstable to use). Estimated cost/task: medium ~$1.10, high ~$1.45, xhigh ~$2.75, max ~$4.25. Fable 5.1 (max) is $7.63 on AA's 2026-09-22 page.
+
+Terminal-Bench 4.0 (Anthropic's chart; GPT figures as OpenAI reported them): Opus 5.5 low 38.5%, medium 57.5%, high 64%, xhigh 66.5%, max 65%.
+
+Most cybersecurity tasks on Opus 5.5 and on Fable are re-routed by Anthropic to Opus 4.8; routine bug finding and fixing in normal development is unaffected — see Security routing below.
+
+Sonnet 5.5 and Haiku 5.5 are due "in the coming weeks" (Anthropic). Recheck the `sonnet-*`/`haiku-*` cross-family pairings then.
+
 What follows from it:
 
 - **Astra at medium already beats sol at max** by about three index points at well under its cost, and astra at max matches Fable 5.1 at max. `gpt-astra-medium` is the cheapest route above sol and the natural consequential challenger; sol at high or xhigh is the fallback, not the first choice.
 - **Flash is the DeepSeek default.** V4.1 Flash at max ties sol at medium on the index at roughly half the cost, and sits above luna at max. V4 Pro is below Flash and costs over twice as much, so route to it only for a reason the index does not capture.
 - **Terra at medium is dominated by luna at max at the same cost.** Prefer `gpt-terra-high` for terra work; if a luna-tier price is the goal, luna's long-context weakness still applies.
 - **Sonnet 5 at medium is far off the frontier** on this chart. Its value on the Claude leg is harness fit and the Max subscription, not index per dollar; do not pick it for a metered comparison.
-- Every Claude point is above the frontier on cost. That is expected for subscription-billed routes and is not a reason to move Claude proposers off the Claude leg.
+- **Opus 5.5 at high (~$1.45, 54) now beats Astra at max ($3.26, 53)** on both score and cost, and sits on the Pareto line — the first Claude point to do so on this chart. Max scores highest on AA's index (58 vs xhigh's 56) but loses to xhigh on Terminal-Bench (65% vs 66.5%) at roughly 1.5x the cost, which is why `opus-xhigh`, not max, is the top Opus route. Other Claude points remain above the frontier on cost; that is expected for subscription-billed routes and is not a reason to move Claude proposers off the Claude leg.
 
 ## Cross-family verification
 
@@ -78,19 +96,21 @@ A same-family reviewer shares the proposer's blind spots, so Claude work is chal
 
 | Proposer | Challenger | Escalate to |
 |---|---|---|
-| `opus-high`, `fable-*` | `gpt-astra-medium` | `gpt-astra-high` |
+| `opus-high`, `opus-xhigh`, `fable-*` | `gpt-astra-high` | `gpt-astra-xhigh` |
 | `opus-medium` | `gpt-sol-medium` | `gpt-sol-high` |
 | `sonnet-high` | `gpt-terra-high` | `gpt-sol-medium` |
 | `sonnet-medium` | `gpt-luna-medium` | `gpt-terra-high` |
 | `haiku-basic` | `gpt-luna-low` | `gpt-luna-medium` |
-| `gpt-astra-*` | `fable-high` | `fable-xhigh` |
-| `gpt-sol-high`, `gpt-sol-xhigh` | `opus-high` | `fable-high` |
+| `gpt-astra-*` | `opus-high` | `opus-xhigh` |
+| `gpt-sol-high`, `gpt-sol-xhigh` | `opus-high` | `opus-xhigh` |
 | `gpt-sol-medium` | `opus-medium` | `opus-high` |
 | `gpt-terra-medium`, `gpt-terra-high` | `sonnet-high` | `opus-medium` |
 | `gpt-luna-*` | `sonnet-medium` | `sonnet-high` |
 | `deepseek-v4-pro-high`, `deepseek-flash-high` | `opus-high` | `gpt-sol-high` |
 | `deepseek-*-medium` | `sonnet-high` | `opus-medium` |
 | `deepseek-*-low` | `sonnet-medium` | `sonnet-high` |
+
+Since Opus 5.5 (2026-09-22), the `gpt-astra-high`/`gpt-astra-xhigh` challenger for Claude proposers (51/52) scores below the proposer (`opus-high` 54, `opus-xhigh` 56) — it is kept for family diversity, not strength.
 
 Third-family tiebreak: when proposer and challenger disagree and the escalation rung would be the same family as one of them, use `deepseek-flash-high` for Sonnet-tier work and `deepseek-v4-pro-high` for Opus-tier work instead, and report all three positions.
 
@@ -99,6 +119,12 @@ Size the challenger to the cost of being wrong, not to the proposer's rank. Trea
 The review-changes skill picks its single verifier from this table, and that verifier is advised for substantial changes, not required for every change.
 
 With the proxy unavailable there is no cross-family route: fall back to a stronger same-family route and report the verification as same-family. The proxy uses the Codex subscription credential for the GPT leg, so a stale one is fixed with `codex login`, not by rerouting; the DeepSeek leg needs a configured prepaid key and answers `503` without one.
+
+### Security routing
+
+Security work — doing it and reviewing it — goes to `gpt-astra-*`, not a Claude route: most cybersecurity tasks on Opus 5.5 and on Fable are re-routed by Anthropic to Opus 4.8, so a Claude route reviewing GPT's security work may actually be running 4.8, not 5.5. Routine bug finding and fixing in normal development is unaffected.
+
+With the proxy down, security work loses its full-strength route: fall back to `opus-high` (or `opus-xhigh`), not Fable, and report both the same-family fallback and that the check may be running on Opus 4.8.
 
 ## Slow-path workflow
 
