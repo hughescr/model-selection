@@ -19,12 +19,12 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 
 | Route | Model name sent | Use for | Peer Claude route | Route effort | Proxy default if named bare | Supported efforts | Confidence |
 |---|---|---|---|---|---|---|---|
-| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `opus-high`, `opus-xhigh` | `medium`, `high`, `xhigh` | `medium` | `low`-`ultra` | Mixed: astra at medium still beats sol at max, but since Opus 5.5 (2026-09-22) astra max (53) sits below its Claude peer `opus-high` (54) — no Astra effort now reaches `opus-high`. Route verified live 2026-09-11; catalog says 272k context. |
-| `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (`gpt-5.6-sol`; floats to `gpt-6-sol` once the proxy lists it) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `opus-high` | `high`, `xhigh` | `low` | `low`-`ultra` | Strong: peer on both the intelligence index and the role. |
-| `gpt-sol-medium` | `sol-medium` (`gpt-5.6-sol`; floats to `gpt-6-sol` once the proxy lists it) | Routine verification, or a second opinion on another agent's work. | `opus-medium` | `medium` | `low` | `low`-`ultra` | Inferred from role, not from a measured head-to-head. |
-| `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-medium` (capability); role peer of `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Weakened since Sonnet 5.5 (2026-09-28): terra max (42) is below `sonnet-high` (47, AA) and about level with `sonnet-medium` (41), so it is no longer a capability peer of `sonnet-high`; it stays the default GPT leaf on price. Terra scores within 1.4 coding points of sol at under half the cost. |
-| `gpt-luna-medium` | `luna-medium` (`gpt-5.6-luna`; floats to `gpt-6-luna` once the proxy lists it) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
-| `gpt-luna-low` | `luna-low` (`gpt-5.6-luna`; floats to `gpt-6-luna` once the proxy lists it) | Cheap mechanical work and summaries. | `haiku-basic` | `low` | `medium` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
+| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (`gpt-6-astra`) | Consequential challenge above sol, and work sol stalled on. | `opus-high`, `opus-xhigh` | `medium`, `high`, `xhigh` | `medium` | `low`-`ultra` | Mixed: astra at medium (~49.5, 2026-09-28 chart) still edges GPT-6 Sol max (48), but astra max (~53 @ ~$3.3) sits below its Claude peer `opus-high` (54; chart ~53.5 @ ~$1.8) — no Astra effort reaches `opus-high`, and `opus-medium` (~51 @ ~$1.35) beats astra medium/high (~49.5 @ ~$1.55, ~51 @ ~$1.75). Astra low ~46 @ ~$0.8 is inferred (dot obscured on the chart). Route verified live 2026-09-11; catalog says 272k context. |
+| `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (`gpt-6-sol`: proxy lists it as of 2026-09-28) | Heavy work, consequential review, complex debugging, long-horizon agent runs. | `sonnet-high` (capability: xhigh ~44, max 48 vs 47); role peer of `opus-high` | `high`, `xhigh` | `low` | `low`-`ultra` | Weak against `opus-high`: on the 2026-09-28 chart sol high/xhigh (~43/~44) sit ~10 below it (54). Only sol max (48, AA page) reaches `sonnet-high`, and no route runs max. |
+| `gpt-sol-medium` | `sol-medium` (`gpt-6-sol`: proxy lists it as of 2026-09-28) | Routine verification, or a second opinion on another agent's work. | `opus-medium` (role); `sonnet-medium` (capability) | `medium` | `low` | `low`-`ultra` | Measured ~40 (chart 2026-09-28): about level with `sonnet-medium` (41) and ~11 below its role peer `opus-medium` (~51). |
+| `gpt-terra-medium`, `gpt-terra-high` | `terra-medium`, `terra-high` (`gpt-5.6-terra`) | Normal substantive execution; the default GPT leaf. Use `high` for multi-file changes. | `sonnet-medium` (capability); role peer of `sonnet-high` | `medium`, `high` | `medium` | `low`-`ultra` | Weakened since Sonnet 5.5 (2026-09-28): terra max (42) is below `sonnet-high` (47, AA) and about level with `sonnet-medium` (41), so it is no longer a capability peer of `sonnet-high`; it stays the default GPT leaf on price. Terra scores within 1.4 coding points of sol at under half the cost (GPT-5.6 Sol). Retirement condition met on AA 2026-09-28 (GPT-6 Sol high ~43 @ ~$0.38 beats terra max 42 @ $1.40); pending Craig's decision, routes unchanged. |
+| `gpt-luna-medium` | `luna-medium` (`gpt-6-luna`: proxy lists it as of 2026-09-28) | Bounded work with objective checks: extraction, classification, mechanical refactors. Short inputs only. | `sonnet-medium` | `medium` | `medium` | `low`-`max` | Strong on positioning and on the long-context limit; the peering is a cost-and-role match. |
+| `gpt-luna-low` | `luna-low` (`gpt-6-luna`: proxy lists it as of 2026-09-28) | Cheap mechanical work and summaries. | `haiku-basic` | `low` | `medium` | `low`-`max` | Weak: no published head-to-head against Haiku, and the index puts luna well above it. A cost peer, not a capability peer. |
 | `deepseek-flash-low`, `deepseek-flash-medium`, `deepseek-flash-high` | `deepseek-flash` (DeepSeek V4.1 Flash) plus frontmatter effort | The default DeepSeek route and the cheapest third-family challenger; peers Haiku, `sonnet-medium`, and `sonnet-high` by tier. | `haiku-*`, `sonnet-medium`, `sonnet-high` | `low`, `medium`, `high` | DeepSeek's own default | forwarded unvalidated; `low`-`high` exercised | Index position is strong; the per-tier peering is inferred from the single max-effort point AA publishes. Weaker since Sonnet 5.5 (2026-09-28): Flash max (39.5) is now below `sonnet-medium` (41) and well below `sonnet-high` (47), so the flash tier peering with Sonnet is a cost match, not a capability match. |
 | `deepseek-v4-pro-low`, `deepseek-v4-pro-medium`, `deepseek-v4-pro-high` | `deepseek-v4-pro` (DeepSeek V4 Pro 0813) plus frontmatter effort | Only when a task needs something the index does not measure; on the index Flash dominates it. No image input. | `sonnet-medium`, `opus-medium`, `opus-high` | `low`, `medium`, `high` | DeepSeek's own default | forwarded unvalidated; `low`-`high` exercised | The peering is a role placeholder, not evidence: AA puts Pro below Flash at over twice the cost. |
 
@@ -38,7 +38,7 @@ Facts that constrain these routes:
 - The proxy accepts a bare alias (`sol`), a pinned name (`sol-5.6`), a raw slug (`gpt-5.6-sol`), or an effort suffix (`sol-high`); the model picker shows these as `anthropic-compat.<alias>`.
 - **Do not route to `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, or `gpt-5.3-codex-spark`.** The first three retire 2026-08-31 and OpenAI's migration advice is terra and luna; spark is excluded by choice and its agent was removed 2026-09-11. Do not route to `codex-auto-review`: hidden and undocumented.
 - **GPT-6 Sol and Luna launched 2026-09-22** (`gpt-6-sol`, `gpt-6-luna`; Codex, Plus/Pro/Business/Enterprise/Edu). No GPT-6 Terra — `gpt-5.6-terra` is still current; GPT-6 Astra is unchanged (launched earlier in September). API price per 1M tokens, input/output: Sol $2/$10, Luna $0.10/$0.50 — both half of GPT-5.6's promotional pricing. Context window and effort list are not published. The luna long-context warning above (41.3% recall) was measured on GPT-5.6 Luna; treat it as unverified for GPT-6 Luna and keep it in force until measured.
-- **utraque's bare aliases float to the newest version carrying a codename** (`internal/router/registry.go`), so once the proxy's catalog includes GPT-6, `gpt-sol-*` and `gpt-luna-*` run GPT-6 with no agent-file change; `gpt-terra-*` stays on 5.6; pinned `sol-5.6`/`luna-5.6` keep the old models. Caveat: utraque reads the Codex CLI version only at startup and sends it as `client_version` on catalog fetches, and the backend withholds GPT-6 Sol/Luna from older clients — on 2026-09-22 the running proxy still sent `0.155.0-alpha.9` while the CLI was `0.155.0`, so it did not yet list them (fix in progress). Check `/v1/models` for `sol-6`/`luna-6` (or equivalent) before assuming a route runs GPT-6.
+- **utraque's bare aliases float to the newest version carrying a codename** (`internal/router/registry.go`), so once the proxy's catalog includes GPT-6, `gpt-sol-*` and `gpt-luna-*` run GPT-6 with no agent-file change; `gpt-terra-*` stays on 5.6; pinned `sol-5.6`/`luna-5.6` keep the old models. Caveat: utraque reads the Codex CLI version only at startup and sends it as `client_version` on catalog fetches, and the backend withholds GPT-6 Sol/Luna from older clients — on 2026-09-22 the running proxy still sent `0.155.0-alpha.9` while the CLI was `0.155.0`, so it did not yet list them (fix in progress). Check `/v1/models` for `sol-6`/`luna-6` (or equivalent) before assuming a route runs GPT-6. **Checked 2026-09-28:** `/healthz` ok (`client_version` `0.155.0-alpha.16.3`, catalog loaded, 9 models); `/v1/models` lists `sol`, `sol-6`, `luna`, `luna-6`, `astra`, `astra-6` as GPT-6 and pinned `sol-5.6`, `luna-5.6`, `terra`/`terra-5.6`, so bare and suffixed `sol`/`luna` should resolve to GPT-6. Listing only: no request was sent, so serving is not verified.
 
 These routes work only when `ANTHROPIC_BASE_URL` names the proxy. The `claude` alias (`claude-smart.sh`) sets it at launch when the proxy answers healthy, so check the environment variable, not `settings.json`. Without it the model name reaches `api.anthropic.com` and is rejected. See `~/.claude/UTRAQUE-SETTINGS-DELTA.md`.
 
@@ -66,17 +66,19 @@ Artificial Analysis Intelligence Index against cost per index task, read from th
 | Claude Sonnet 5 (medium; superseded by Sonnet 5.5 on 2026-09-28) | 28.5 | $1 | no |
 | GPT-5.6 Luna (medium) | 25.5 | $0.013 | yes |
 
-**2026-09-22 update — Opus 5.5.** `claude-opus-5-5` ships with 1M context (AA) and efforts `low` / `medium` (default) / `high` / `xhigh` / `max`; the `opus` alias now resolves to it (this session runs on it; not independently verified from a spawned agent). Anthropic says it "performs at the level of Claude Fable 5.1 on most work." AA Intelligence Index v4.3.2 by effort:
+**2026-09-28 AA chart** ("Intelligence Index vs. Cost per Intelligence Index Task"). Newer than the table above, which stays as history. It supplies measured costs for Opus 5.5 and GPT-6 Sol/Luna/Astra, which replace the estimates below. Readings marked ~ are approximate chart readings; unmarked figures are exact AA page values. The Pareto line runs through Opus 5.5 medium, high, xhigh, and max; GPT-6 Sol max (48 @ $1.06); and GPT-6 Luna low through xhigh. No Sonnet 5.5 point is on it. Two faded Pareto points (~38 @ ~$0.063, ~46.5 @ ~$0.13) are Xiaomi models, not routable. GPT-5.6 Terra is not on this chart; its last AA figures stand (max 42 @ $1.40, medium 30.5 @ $0.19).
 
-| Effort | Opus 5.5 | Fable 5.1 | GPT-6 Astra | Opus 5 |
-|---|---|---|---|---|
-| max | 58 | 53 | 53 | 51 |
-| xhigh | 56 | 53 | 52 | 51 |
-| high | 54 | 51 | 51 | 49 |
-| medium | 51 | 49 | 50 | – |
-| low | – | 47 | 46 | – |
+**2026-09-22 update — Opus 5.5.** `claude-opus-5-5` ships with 1M context (AA) and efforts `low` / `medium` (default) / `high` / `xhigh` / `max`; the `opus` alias now resolves to it (this session runs on it; not independently verified from a spawned agent). Anthropic says it "performs at the level of Claude Fable 5.1 on most work." AA Intelligence Index v4.3.2 by effort (the Opus 5.5 column is authoritative for score; the last column is the 2026-09-28 chart, approximate, so its scores differ slightly):
 
-AA has not published Opus 5.5 cost (its page shows "N/A"). **Estimate**, to replace once AA publishes: Anthropic's Terminal-Bench 4.0 cost-per-attempt × 0.38, the mean AA:Anthropic cost ratio for Fable 5.1 and Opus 5 at medium and max (range 0.33-0.41; GPT ratios were 0.20-0.32 and too unstable to use). Estimated cost/task: medium ~$1.10, high ~$1.45, xhigh ~$2.75, max ~$4.25. Fable 5.1 (max) is $7.63 on AA's 2026-09-22 page.
+| Effort | Opus 5.5 | Fable 5.1 | GPT-6 Astra | Opus 5 | Opus 5.5 chart, index @ cost/task |
+|---|---|---|---|---|---|
+| max | 58 | 53 | 53 | 51 | ~57.5 @ ~$6 |
+| xhigh | 56 | 53 | 52 | 51 | ~56 @ ~$3.5 |
+| high | 54 | 51 | 51 | 49 | ~53.5 @ ~$1.8 |
+| medium | 51 | 49 | 50 | – | ~51 @ ~$1.35 |
+| low | – | 47 | 46 | – | ~42.5 @ ~$0.55 |
+
+AA's page showed Opus 5.5 cost as "N/A" on 2026-09-22; the chart costs above replace the estimate made then (Terminal-Bench cost × 0.38; ~$1.10 / $1.45 / $2.75 / $4.25 for medium/high/xhigh/max), which ran ~20-30% low. Fable 5.1 (max) is $7.63 on AA's 2026-09-22 page.
 
 Terminal-Bench 4.0 (Anthropic's chart; GPT figures as OpenAI reported them): Opus 5.5 low 38.5%, medium 57.5%, high 64%, xhigh 66.5%, max 65%.
 
@@ -88,21 +90,23 @@ Sonnet 5.5 low (index 36 @ $0.41/task, AA-measured) is a candidate stand-in for 
 
 **2026-09-22 update — GPT-6 Sol and Luna.** OpenAI compared the new models to Opus 5, not Opus 5.5. Selected claims: AutomationBench — Sol xhigh 33.2% at $0.27/task, Astra low 30.3%, Opus 5 max 26.9% (for reference: Opus 5.5 40.0%, Astra max 41.4%, from Anthropic's page). DeepSWE — Sol max 68.8%, Luna max 66.6% (about Opus 5 at medium). OSWorld 2.0 offline — Sol xhigh 60.5% vs Opus 5 medium 60.3%.
 
-**Estimate** (AA has not published GPT-6 Sol/Luna cost), method: AA cost ÷ OpenAI's DeepSWE-chart cost was stable at 0.33–0.44 for GPT-5.6 Sol, GPT-5.6 Luna, and GPT-6 Astra, while the AutomationBench and FrontierCode ratios varied 3–5x and were rejected; DeepSWE chart costs were multiplied by 0.40 (medium), 0.38 (high/xhigh), 0.37 (max). Cross-checked by scaling AA's GPT-5.6 costs by the GPT-6/GPT-5.6 same-effort cost ratio averaged over the three charts — agreed (Sol max ~$0.95, Sol medium ~$0.18, Luna max ~$0.074).
+Measured 2026-09-28 (AA chart; index @ cost/task; ~ = approximate reading, unmarked = AA page). The 2026-09-22 cost estimates (AA cost ÷ OpenAI DeepSWE-chart cost × 0.37-0.40) are shown for comparison:
 
-| Effort | GPT-6 Sol est. AA cost/task | GPT-6 Luna est. AA cost/task |
-|---|---|---|
-| medium | ~$0.15 (0.14–0.16) | ~$0.02 (0.01–0.022; weakest estimate) |
-| high | ~$0.24 | ~$0.03 |
-| xhigh | ~$0.37 | ~$0.04 |
-| max | $1.06 (AA-measured 2026-09-28, index 48; the estimate was ~$1.00, so it held) | ~$0.08 (0.07–0.10) |
+| Effort | GPT-6 Sol (est.) | GPT-6 Luna (est.) | GPT-6 Astra |
+|---|---|---|---|
+| low | ~34 @ ~$0.13 | ~21 @ ~$0.006 | ~46 @ ~$0.8 (inferred: dot obscured by a chart label) |
+| medium | ~40 @ ~$0.25 (est. $0.15) | ~29.5 @ ~$0.018 (est. $0.02) | ~49.5 @ ~$1.55 |
+| high | ~43 @ ~$0.38 (est. $0.24) | ~32 @ ~$0.029 (est. $0.03) | ~51 @ ~$1.75 |
+| xhigh | ~44 @ ~$0.55 (est. $0.37) | ~34 @ ~$0.043 (est. $0.04) | ~52.5 @ ~$2.35 |
+| max | 48 @ $1.06 (est. ~$1.00) | ~37.5 @ ~$0.068 (est. $0.08) | ~53 @ ~$3.3 |
 
-Other GPT-6 Sol/Luna efforts remain unmeasured. Expectations below are unmeasured except Sol max, pending AA index scores — not a routing decision:
+Findings (measured, not estimated; routing consequences are in the tables and bullets below):
 
-- GPT-6 Sol medium is expected to match GPT-5.6 Sol max on FrontierCode and AutomationBench at about a tenth of the cost; GPT-5.6 Sol max scores 47 on AA's index, so expect GPT-6 Sol medium around the mid-40s.
-- If AA confirms that, GPT-6 Sol dominates GPT-5.6 Terra (42 at $1.40 max; 30.5 at $0.19 medium) on the frontier, and the `gpt-terra-*` routes become candidates to retire or re-point.
-- GPT-6 Sol max ($1.06 AA-measured, index 48) sits below Opus 5.5 high (~$1.45 est., 54) and Astra max ($3.26, 53) — a cheaper frontier point, not a replacement. It is level with Sonnet 5.5 high (47 @ $1.08, AA-measured).
-- **Re-check GPT-6 Sol/Luna peering and the `gpt-terra-*` routes when AA publishes scores** (noted 2026-09-22).
+- **The cost method held for Luna and for Sol max, but Sol medium/high/xhigh ran ~40% low.** Do not reuse the DeepSWE ratio for Sol below max.
+- **The "expected mid-40s" for GPT-6 Sol medium was wrong: it is ~40**, level with GPT-5.6 Sol medium (39.5 @ $0.5) at half the cost, and below Sonnet 5.5 high (47) — so Sol medium does not challenge `sonnet-high`.
+- **GPT-6 Sol dominates GPT-5.6 Terra on score:** Sol high (~43 @ ~$0.38) beats Terra max (42 @ $1.40) at under a third of the cost; Sol medium (~40 @ $0.25) beats Terra medium (30.5 @ $0.19) on score for ~$0.06 more. The `gpt-terra-*` retirement condition noted 2026-09-22 is therefore **met on AA**. Act on it only once the proxy serves GPT-6 Sol: `/v1/models` lists `sol`/`sol-6` as GPT-6-Sol (2026-09-28, listing only), so this may already hold. **Pending Craig's decision** to retire or re-point `gpt-terra-*` — not done.
+- GPT-6 Sol max (48 @ $1.06, on the Pareto line) is level with Sonnet 5.5 high (47 @ $1.08) and below Opus 5.5 medium (~51 @ ~$1.35), high, and Astra max (~53 @ ~$3.3) — a cheaper frontier point, not a replacement.
+- GPT-6 Luna max (~37.5 @ ~$0.068) roughly matches GPT-5.6 Luna max (37.5 @ $0.19) at about a third of the cost; Luna low through xhigh are on the Pareto line.
 
 **2026-09-28 update — Sonnet 5.5.** `claude-sonnet-5-5` (all platforms) ships with 1M context (AA), API price $2/$10 per 1M input/output (cache read $0.20, write $2.50), and efforts `low` / `medium` / `high` / `xhigh` / `max`: default `medium` in Claude Code and apps, `high` on the API. The `sonnet` alias now resolves to it (verified from a spawned `sonnet-high` agent on 2026-09-28), so `sonnet-high` and `sonnet-medium` run Sonnet 5.5 unchanged. Anthropic claims 30%+ faster than Sonnet 5, up to 30% cheaper for most work. AA Intelligence Index, measured 2026-09-28 (with default fallback), and Anthropic's chart readings (approximate; cost is Anthropic's per-attempt, not AA's):
 
@@ -120,13 +124,13 @@ Security: on Sonnet 5.5, higher-risk cybersecurity tasks visibly fall back to So
 
 What follows from it:
 
-- **Astra at medium already beats sol at max** by about three index points at well under its cost, and astra at max matches Fable 5.1 at max. `gpt-astra-medium` is the cheapest route above sol and the natural consequential challenger; sol at high or xhigh is the fallback, not the first choice.
-- **Flash is the DeepSeek default.** V4.1 Flash at max ties sol at medium on the index at roughly half the cost, and sits above luna at max. V4 Pro is below Flash and costs over twice as much, so route to it only for a reason the index does not capture.
-- **Terra at medium is dominated by luna at max at the same cost.** Prefer `gpt-terra-high` for terra work; if a luna-tier price is the goal, luna's long-context weakness still applies.
+- **Astra at medium still beats sol at max, but narrowly now.** 2026-09-11 (GPT-5.6 Sol): by about three index points at well under its cost. 2026-09-28 chart (GPT-6 Sol max): ~49.5 @ ~$1.55 vs 48 @ $1.06, so 1.5 points for ~46% more cost. Astra at max matches Fable 5.1 at max. `gpt-astra-medium` is still the cheapest route above sol and the natural consequential challenger; sol at high or xhigh is the fallback, not the first choice.
+- **Flash is the DeepSeek default, with a narrower edge.** 2026-09-11: V4.1 Flash at max ties GPT-5.6 Sol at medium on the index at roughly half the cost, and sits above luna at max. GPT-6 Sol medium (~40 @ ~$0.25) now matches Flash (39.5 @ $0.28) on score at slightly lower AA cost, so Flash's advantage is metered-vs-subscription billing, not the index. V4 Pro is below Flash and costs over twice as much, so route to it only for a reason the index does not capture.
+- **Terra at medium is dominated by luna at max.** 2026-09-11: same cost, GPT-5.6 Luna max 37.5 @ $0.19. 2026-09-28: GPT-6 Luna max (~37.5 @ ~$0.068) has the higher score at about a third of Terra medium's cost ($0.19), and GPT-6 Sol medium also beats it on score. Prefer `gpt-terra-high` for terra work until the retirement decision (above); luna's long-context weakness still applies.
 - **Sonnet 5.5 is a real step up from Sonnet 5 (28.5).** On AA, medium (41 @ $0.59) beats GPT-5.6 Sol medium (39.5) and DeepSeek Flash max (39.5); high (47 @ $1.08) is level with GPT-5.6 Sol max (47) and GPT-6 Sol max (48 @ $1.06). Per effort step, Sonnet 5.5 trails Opus 5.5 by about one step on Anthropic's charts (Sonnet high ≈ Opus low, Sonnet xhigh ≈ Opus medium, approximate) at lower cost per step. Its value on the Claude leg is still harness fit and the Max subscription.
-- **No `sonnet-xhigh` or `sonnet-max` route.** Opus 5.5 high dominates Sonnet 5.5 xhigh: AA 54 @ ~$1.45 (est.) vs 52 @ $2.74; Terminal-Bench ~64% vs ~61.5% at lower cost per attempt ($3.9 vs $5.3); CursorBench ~56% vs ~53% at about the same cost ($3.9 vs $3.8). Anthropic-chart readings are approximate. Sonnet max tops Terminal-Bench but at ~$12.7 and scores below xhigh on FrontierCode.
-- **Open question, not a decision: is `sonnet-high` still the right default leaf?** On AA, Opus 5.5 medium (51 @ ~$1.10, cost estimated) beats Sonnet 5.5 high (47 @ $1.08, measured) at about the same cost. Revisit once AA publishes real Opus 5.5 cost; until then the default stays `sonnet-high`.
-- **Opus 5.5 at high (~$1.45, 54) now beats Astra at max ($3.26, 53)** on both score and cost, and sits on the Pareto line — the first Claude point to do so on this chart. Max scores highest on AA's index (58 vs xhigh's 56) but loses to xhigh on Terminal-Bench (65% vs 66.5%) at roughly 1.5x the cost, which is why `opus-xhigh`, not max, is the top Opus route. Other Claude points remain above the frontier on cost; that is expected for subscription-billed routes and is not a reason to move Claude proposers off the Claude leg.
+- **No `sonnet-xhigh` or `sonnet-max` route.** Opus 5.5 high dominates Sonnet 5.5 xhigh: AA 54 (chart ~53.5) @ ~$1.8 vs 52 @ $2.74; Terminal-Bench ~64% vs ~61.5% at lower cost per attempt ($3.9 vs $5.3); CursorBench ~56% vs ~53% at about the same cost ($3.9 vs $3.8). Opus xhigh (56 @ ~$3.5) ties Sonnet max (56 @ $7.60) at under half the cost. Anthropic-chart readings are approximate. Sonnet max tops Terminal-Bench but at ~$12.7 and scores below xhigh on FrontierCode.
+- **Open question, not a decision: is `sonnet-high` still the right default leaf?** On the 2026-09-28 AA chart, Opus 5.5 medium (~51 @ ~$1.35) beats Sonnet 5.5 high (47 @ $1.08): +4 points for ~25% more cost. Opus 5.5 low (~42.5 @ ~$0.55) beats Sonnet 5.5 medium (41 @ $0.59) outright, and no Sonnet 5.5 point is on the Pareto line. Anthropic's own coding charts (FrontierCode, CursorBench) favour Sonnet more than AA does. Craig's call; the default stays `sonnet-high`.
+- **Opus 5.5 at high (~53.5-54 @ ~$1.8) beats Astra at max (~53 @ ~$3.3)** on both score and cost, and sits on the Pareto line with Opus medium, xhigh, and max — the first Claude points to do so on this chart. Max scores highest on AA's index (58 vs xhigh's 56) but loses to xhigh on Terminal-Bench (65% vs 66.5%) at roughly 1.7x the cost (~$6 vs ~$3.5), which is why `opus-xhigh`, not max, is the top Opus route. Sonnet 5.5 and Fable points remain above the frontier on cost; that is expected for subscription-billed routes and is not a reason to move Claude proposers off the Claude leg.
 
 ## Cross-family verification
 
@@ -136,8 +140,8 @@ A same-family reviewer shares the proposer's blind spots, so Claude work is chal
 |---|---|---|
 | `opus-high`, `opus-xhigh`, `fable-*` | `gpt-astra-high` | `gpt-astra-xhigh` |
 | `opus-medium` | `gpt-sol-medium` | `gpt-sol-high` |
-| `sonnet-high` | `gpt-sol-medium` | `gpt-sol-high` |
-| `sonnet-medium` | `gpt-terra-high` | `gpt-sol-medium` |
+| `sonnet-high` | `gpt-sol-xhigh` | `gpt-astra-medium` |
+| `sonnet-medium` | `gpt-sol-medium` | `gpt-sol-high` |
 | `haiku-basic` | `gpt-luna-low` | `gpt-luna-medium` |
 | `gpt-astra-*` | `opus-high` | `opus-xhigh` |
 | `gpt-sol-high`, `gpt-sol-xhigh` | `opus-high` | `opus-xhigh` |
@@ -150,7 +154,7 @@ A same-family reviewer shares the proposer's blind spots, so Claude work is chal
 
 Since Opus 5.5 (2026-09-22), the `gpt-astra-high`/`gpt-astra-xhigh` challenger for Claude proposers (51/52) scores below the proposer (`opus-high` 54, `opus-xhigh` 56) — it is kept for family diversity, not strength.
 
-Since Sonnet 5.5 (2026-09-28), the Sonnet challengers moved up one rung: terra max (42) is below `sonnet-high` (47). `gpt-sol-medium` (GPT-5.6 Sol medium, 39.5) still scores below `sonnet-high`; it is a family-diversity check, and floats to GPT-6 Sol once the proxy lists it (GPT-6 Sol max is 48; other efforts unmeasured). Use `gpt-sol-high` when the cost of being wrong is real. The DeepSeek proposer rows keep their Claude challengers, which only got stronger.
+Since Sonnet 5.5 and the 2026-09-28 AA chart, the Sonnet challengers moved up: `sonnet-high` (47) gets `gpt-sol-xhigh` (~44 @ ~$0.55), escalating to `gpt-astra-medium` (~49.5); `sonnet-medium` (41) gets `gpt-sol-medium` (~40), escalating to `gpt-sol-high` (~43). The first Sonnet 5.5 picks were too weak: GPT-6 Sol medium is ~40, below `sonnet-high`, and terra max (42) is too. Sol xhigh still scores a little below `sonnet-high`, so it is partly a family-diversity check; use the astra rung when the cost of being wrong is real. `opus-medium` (~51) keeps `gpt-sol-medium` (~40), ~11 points below it — unchanged here, `gpt-astra-medium` would be the stronger pick. The DeepSeek proposer rows keep their Claude challengers, which only got stronger.
 
 Third-family tiebreak: when proposer and challenger disagree and the escalation rung would be the same family as one of them, use `deepseek-flash-high` for Sonnet-tier work and `deepseek-v4-pro-high` for Opus-tier work instead, and report all three positions.
 
