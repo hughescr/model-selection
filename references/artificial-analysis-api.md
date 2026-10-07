@@ -20,7 +20,7 @@ curl -X GET https://artificialanalysis.ai/api/v2/language/models/free \
   -H "x-api-key: YOUR_KEY"
 ```
 
-The response is an object with `tier`, `intelligence_index_version`, a `pagination` object, and a `data` array. The catalog is paginated: as of this writing `pagination.page_size` is 200 and the full free-tier catalog spans 3 pages (591 models total). Pass `?page=N` (1-based) to fetch a specific page. `pagination` looks like:
+The response is an object with `tier`, `intelligence_index_version`, a `pagination` object, and a `data` array. The catalog is paginated; pass `?page=N` (1-based) to fetch a specific page. `pagination` looks like:
 
 ```json
 {"page": 1, "page_size": 200, "total_pages": 3, "has_more": true}
@@ -74,7 +74,7 @@ Use `id` for joins and saved decisions. Use `name` for display and `slug` for hu
 
 ### Evaluations
 
-`evaluations` is an open-ended object in principle, but the free tier of `/language/models/free` currently exposes exactly three keys on every record (present with a `null` value when unmeasured): `artificial_analysis_intelligence_index`, `artificial_analysis_coding_index`, and `artificial_analysis_agentic_index`. Older cached payloads (from the retired `/data/llms/models` endpoint) may still carry granular standalone benchmarks such as `mmlu_pro`, `gpqa`, `hle`, `livecodebench`, or `scicode` — the aliasing in `TOPIC_ALIASES` keeps resolving those keys for backward compatibility with such a cache, but a fresh fetch from the free tier will not repopulate them. Do not hard-code a closed schema; a future free-tier expansion could add fields back.
+`evaluations` is an open-ended object in principle, but the free tier of `/language/models/free` currently exposes exactly three keys on every record (present with a `null` value when unmeasured): `artificial_analysis_intelligence_index`, `artificial_analysis_coding_index`, and `artificial_analysis_agentic_index`. Granular benchmarks such as `livecodebench` or `scicode` are not returned; `TOPIC_ALIASES` still names them but they resolve only if a payload carries them. Do not hard-code a closed schema.
 
 Current methodology groups Intelligence Index v4.1 evaluations into Agents (34%), Coding (24%), Scientific Reasoning (24%), and General (18%). The included evaluations are GDPval-AA v2, tau3-Banking, Terminal-Bench v2.1, SciCode, AA-LCR, AA-Omniscience, Humanity's Last Exam, GPQA Diamond, and CritPt. Standalone evaluations such as LiveCodeBench, IFBench, MMLU-Pro, Global-MMLU-Lite, and MMMU Pro belong to that broader methodology but are not present as separate fields on the free-tier `evaluations` object.
 
@@ -88,14 +88,12 @@ The broader Artificial Analysis methodology defines blended price and cost-per-t
 
 ### Speed and latency
 
-Speed and latency fields live under a nested `performance` object (not top-level, as on the retired endpoint):
+Speed and latency fields live under a nested `performance` object:
 
 - `performance.median_output_tokens_per_second`: median output generation speed.
 - `performance.median_time_to_first_token_seconds`: time to the first emitted token, including reasoning tokens when applicable.
 - `performance.median_time_to_first_answer_token_seconds`: time to the first answer token after hidden/reasoning tokens, when measured.
 - `performance.median_end_to_end_response_time_seconds`: median wall-clock time for the full response.
-
-`scripts/model_selection.py` reads these from `performance` first and falls back to the old top-level field names so an old cached payload still renders.
 
 The API documents a default medium prompt length of approximately 1,000 input tokens for speed and latency data unless otherwise specified. Treat speed as endpoint experience, not a hardware maximum.
 
