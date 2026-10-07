@@ -99,7 +99,7 @@ The API documents a default medium prompt length of approximately 1,000 input to
 
 ## Local Cache Contract
 
-The helper stores `.cache/llms-models.json` with:
+The helper stores `llms-models.json` in its cache directory (`$MODEL_SELECTION_CACHE_DIR`, else `$XDG_CACHE_HOME/model-selection/` or `~/.cache/model-selection/`) with:
 
 ```json
 {
@@ -117,7 +117,7 @@ Default behavior:
 - `--refresh` forces a request.
 - On network/API failure, use the existing cache and print a warning unless `--no-stale-if-error` is passed.
 - Use `--max-age SECONDS` to set a different freshness window.
-- Set `MODEL_SELECTION_CACHE_DIR` or pass `--cache-dir` to move the cache.
+- Set `MODEL_SELECTION_CACHE_DIR` or pass `--cache-dir` to move the cache. It never lives inside the plugin, whose installed copy is replaced on update.
 
 This design keeps request volume low, makes a recommendation reproducible, and makes stale data visible. A stale cache is a fallback, not evidence that the current leaderboard is unchanged.
 

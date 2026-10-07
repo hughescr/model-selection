@@ -5,24 +5,24 @@ description: Compare language models on Artificial Analysis benchmarks, price, s
 
 # Model Selection
 
-A bundled Python client discovers local runtime options, fetches the Artificial Analysis LLM catalog with disk caching, ranks models by task-relevant benchmarks, and formats the evidence.
+A bundled Python client discovers local runtime options, fetches the Artificial Analysis LLM catalog with disk caching, ranks models by task-relevant benchmarks, and formats the evidence. Paths below are relative to this skill's directory (`${CLAUDE_SKILL_DIR}`).
 
 ## Fast path first
 
-For a routine spawn or verifier choice covered by the routing and cross-family pairing tables in `~/.claude/CLAUDE.md`, select that route and stop — no discovery, fetch, or ranking. Take the slow path only for the triggers in the description. An explicit user selection wins, subject to availability.
+For a routine spawn or verifier choice covered by the routing and cross-family pairing tables in CLAUDE.md (the global instructions from the `craig-core` plugin), select that route and stop — no discovery, fetch, or ranking. Take the slow path only for the triggers in the description. An explicit user selection wins, subject to availability.
 
 ## Local gateway routes
 
-The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription. The `deepseek-*` routes reach DeepSeek's Anthropic-compatible endpoint over the same proxy and spend a prepaid DeepSeek API balance, so they are the only metered routes. Route agents live in `~/.claude/agents/`; this skill's `agents/` directory is a Codex interface manifest, not a route directory — do not define routes here.
+The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription. The `deepseek-*` routes reach DeepSeek's Anthropic-compatible endpoint over the same proxy and spend a prepaid DeepSeek API balance, so they are the only metered routes. The Claude route agents ship in the `craig-core` plugin (`craig-core:<route>`); the `gpt-*` and `deepseek-*` route agents live in `~/.claude/agents/` on Craig's Mac only. When these routes count as available, and the Claude-only fallback when they do not, is the Route availability rule in CLAUDE.md. This skill's `agents/` directory is a Codex interface manifest, not a route directory — do not define routes here.
 
 | Route | Model name sent | Peer Claude route | Route effort |
 |---|---|---|---|
-| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (GPT-6 Astra) | `opus-high`, `opus-xhigh` | `medium`, `high`, `xhigh` |
-| `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (GPT-6.1 Sol) | `sonnet-high` | `high`, `xhigh` |
-| `gpt-sol-medium` | `sol-medium` (GPT-6.1 Sol) | `sonnet-high` | `medium` |
-| `gpt-luna-low`, `gpt-luna-medium` | `luna-low`, `luna-medium` (GPT-6 Luna) | `haiku-low` | `low`, `medium` |
-| `deepseek-flash-low`, `-medium`, `-high` | `deepseek-flash` (V4.1 Flash) plus frontmatter effort | `haiku-*`, `sonnet-medium`, `sonnet-high` | `low`, `medium`, `high` |
-| `deepseek-v4-pro-low`, `-medium`, `-high` | `deepseek-v4-pro` (V4 Pro 0813) plus frontmatter effort; no image input | `sonnet-medium`, `opus-medium`, `opus-high` | `low`, `medium`, `high` |
+| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (GPT-6 Astra) | `craig-core:opus-high`, `craig-core:opus-xhigh` | `medium`, `high`, `xhigh` |
+| `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (GPT-6.1 Sol) | `craig-core:sonnet-high` | `high`, `xhigh` |
+| `gpt-sol-medium` | `sol-medium` (GPT-6.1 Sol) | `craig-core:sonnet-high` | `medium` |
+| `gpt-luna-low`, `gpt-luna-medium` | `luna-low`, `luna-medium` (GPT-6 Luna) | `craig-core:haiku-low` | `low`, `medium` |
+| `deepseek-flash-low`, `-medium`, `-high` | `deepseek-flash` (V4.1 Flash) plus frontmatter effort | `craig-core:haiku-*`, `craig-core:sonnet-medium`, `craig-core:sonnet-high` | `low`, `medium`, `high` |
+| `deepseek-v4-pro-low`, `-medium`, `-high` | `deepseek-v4-pro` (V4 Pro 0813) plus frontmatter effort; no image input | `craig-core:sonnet-medium`, `craig-core:opus-medium`, `craig-core:opus-high` | `low`, `medium`, `high` |
 
 Facts that constrain these routes:
 
@@ -34,7 +34,7 @@ Facts that constrain these routes:
 - **Bare aliases float to the newest model with that codename**; pinned names (`sol-6`) keep older ones. The backend withholds new models from older Codex CLI clients, so check `/v1/models` before assuming which model a route runs.
 - Do not route to `gpt-5.3-codex-spark` or `codex-auto-review`.
 
-These routes work only when `ANTHROPIC_BASE_URL` names the proxy. The `claude` alias (`claude-smart.sh`) sets it at launch when the proxy answers healthy, so check the environment variable, not `settings.json`. Without it the model name reaches `api.anthropic.com` and is rejected. See `~/.claude/UTRAQUE-SETTINGS-DELTA.md`.
+These routes work only when `ANTHROPIC_BASE_URL` is `http://127.0.0.1:8317`. The `claude` alias (`claude-smart.sh`) sets it at launch when the proxy answers healthy, so check the environment variable, not `settings.json`. Without it the model name reaches `api.anthropic.com` and is rejected. See `~/.claude/UTRAQUE-SETTINGS-DELTA.md`.
 
 For availability prefer the proxy's own state: `GET /healthz` reports Codex auth, catalog state and model count, transport, and quota, and `GET /v1/models` lists what is routable now (DeepSeek rows only when a DeepSeek key is configured). When the proxy is down every `gpt-*` and `deepseek-*` route fails immediately; Claude routes are unaffected only in sessions launched without the proxy. In a session already routed through it, all requests fail while the proxy is down. The GPT leg uses the Codex subscription credential, so fix a stale one with `codex login`, not by rerouting. The DeepSeek leg answers `503` when no prepaid key is configured.
 
@@ -55,24 +55,22 @@ Artificial Analysis Intelligence Index @ cost per index task, as of 2026-10-07. 
 | DeepSeek V4 Pro 0813 | — | — | — | — | ~36 @ ~$0.68 |
 
 - **Haiku prices by per-request prompt length:** up to 100k tokens $0.10/$0.50 per 1M input/output; above 100k every category rises 5x. That drives the CLAUDE.md rule sending prompts expected to stay under 100k to the haiku routes.
-- **Haiku's long-context recall is unmeasured**, so prompts above 100k stay on `sonnet-medium` until it is measured.
+- **Haiku's long-context recall is unmeasured**, so prompts above 100k stay on `craig-core:sonnet-medium` until it is measured.
 - **AA's Sonnet costs predate the 2026-10-07 cache-read cut** ($0.20 to $0.10 per 1M), so they overstate Sonnet's cost until AA re-measures.
-- **No `sonnet-xhigh` or `sonnet-max` route:** `opus-high` dominates Sonnet xhigh, and Opus xhigh ties Sonnet max at under half the cost.
+- **No `sonnet-xhigh` or `sonnet-max` route:** `craig-core:opus-high` dominates Sonnet xhigh, and Opus xhigh ties Sonnet max at under half the cost.
 - **No `opus-max` route:** Opus xhigh beats max on Terminal-Bench at about 1.7x lower cost.
 
 ## Cross-family verification
 
-The pairing table, tiebreak, and proxy-down fallback live in `~/.claude/CLAUDE.md`. In addition:
+The pairing table with its Claude-only columns, the tiebreak, and the security override live in CLAUDE.md. In addition, when cross-family routes are available:
 
-- If `gpt-sol-high` fails as the challenger for `sonnet-high` or `opus-medium`, use `gpt-astra-medium`, escalating to `gpt-astra-high`.
-- `sonnet-high` is also an acceptable routine challenger for `gpt-sol-medium`.
+- If `gpt-sol-high` fails as the challenger for `craig-core:sonnet-high` or `craig-core:opus-medium`, use `gpt-astra-medium`, escalating to `gpt-astra-high`.
+- `craig-core:sonnet-high` is also an acceptable routine challenger for `gpt-sol-medium`.
 - DeepSeek Flash is a fit challenger when metered-cheap is the right price for a second opinion.
 
 ### Security routing
 
-Security work — doing it and reviewing it — goes to `gpt-astra-*`, not a Claude route. Anthropic re-routes most cybersecurity tasks on Opus and Fable to an older Opus, and higher-risk ones on Sonnet visibly fall back to an older Sonnet, so no Claude route is full-strength for security and a Claude route reviewing GPT's security work may be running the older model. Routine bug finding and fixing in normal development is unaffected. Haiku has no fallback: a cyber-classifier decline returns `stop_reason: "refusal"` and stays declined, so `haiku-*` routes never run security work.
-
-With the proxy down, fall back to `opus-high` (or `opus-xhigh`), not Fable, and report both that the check is same-family and that it may be running an older Opus.
+Why CLAUDE.md sends security work — doing it and reviewing it — to `gpt-astra-*` and, Claude-only, to `craig-core:opus-high`/`craig-core:opus-xhigh` but never Fable or Haiku: Anthropic re-routes most cybersecurity tasks on Opus and Fable to an older Opus, and higher-risk ones on Sonnet visibly fall back to an older Sonnet, so no Claude route is full-strength for security and a Claude route reviewing GPT's security work may be running the older model. Routine bug finding and fixing in normal development is unaffected. Haiku has no fallback: a cyber-classifier decline returns `stop_reason: "refusal"` and stays declined, so `craig-core:haiku-*` routes never run security work. A Claude-only security check is reported as same-family and as possibly run on an older Opus.
 
 ## Slow-path workflow
 
@@ -84,14 +82,14 @@ With the proxy down, fall back to `opus-high` (or `opus-xhigh`), not Fable, and 
 
    Codex discovery reads `CODEX_HOME/models_cache.json` and `config.toml`; treat `visibility: list` entries as available and mark hidden ones separately. Claude discovery reads `~/.claude/settings.json`, model fields in `~/.claude.json`, and the CLI help. Claude's `opus`/`sonnet`/`haiku` are aliases, not proof every dated model is enabled, and no supported command enumerates the full entitlement set — preserve that uncertainty. Neither runtime file knows about the gateway: pointed at `utraque`, Claude Code reaches the Codex models too, and `/healthz` is the authority on which are live.
 
-2. **Fetch** the catalog only if discovery does not resolve it. Credentials default to `creds.json` beside this skill; cache to `.cache/llms-models.json`.
+2. **Fetch** the catalog only if discovery does not resolve it. The key comes from `ARTIFICIAL_ANALYSIS_API_KEY`; if that is unset and the 1Password CLI `op` is on PATH, from `op read "$ARTIFICIAL_ANALYSIS_OP_REF"` (default `op://Private/Artificial Analysis/credential`). The catalog caches to `llms-models.json` in `$MODEL_SELECTION_CACHE_DIR`, default `~/.cache/model-selection/`.
 
    ```bash
    python3 scripts/model_selection.py fetch
    python3 scripts/model_selection.py fetch --refresh
    ```
 
-   Use `ARTIFICIAL_ANALYSIS_API_KEY` or `--credentials PATH` if the key lives elsewhere. Never print, commit, or embed the key. The cache is 24h and falls back to stale data after a failed refresh; pass `--no-stale-if-error` when freshness is required.
+   Never print, commit, or embed the key, and never write it to a file beside the skill. The cache is 24h and falls back to stale data after a failed refresh; pass `--no-stale-if-error` when freshness is required.
 
 3. **Rank** only if still unresolved. Prefer an Artificial Analysis category index when present; otherwise the client uses available benchmark fields from the topic alias list and reports which it used.
 

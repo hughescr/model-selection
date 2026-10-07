@@ -29,6 +29,11 @@ API_BASE = "https://artificialanalysis.ai/api/v2"
 LLM_ENDPOINT = "/language/models/free"
 DEFAULT_MAX_AGE = 24 * 60 * 60
 
+# 1Password fallback for the API key, used only when ARTIFICIAL_ANALYSIS_API_KEY
+# is unset and the `op` CLI is on PATH. Override with ARTIFICIAL_ANALYSIS_OP_REF.
+DEFAULT_OP_REF = "op://Private/Artificial Analysis/credential"
+OP_TIMEOUT_SECONDS = 60
+
 # These aliases intentionally include both the names used in Artificial
 # Analysis prose and the machine-oriented variants seen in API payloads.
 TOPIC_ALIASES: dict[str, list[str]] = {
@@ -112,13 +117,15 @@ TOPIC_ALIASES: dict[str, list[str]] = {
 }
 
 
-def skill_root() -> Path:
-    return Path(__file__).resolve().parents[1]
-
-
 def default_cache_dir() -> Path:
+    # The cache lives outside the plugin: an installed plugin directory is a
+    # managed copy that updates replace, and it may not be writable.
     configured = os.environ.get("MODEL_SELECTION_CACHE_DIR")
-    return Path(configured).expanduser() if configured else skill_root() / ".cache"
+    if configured:
+        return Path(configured).expanduser()
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg).expanduser() if xdg else Path.home() / ".cache"
+    return base / "model-selection"
 
 
 def normalize_name(value: Any) -> str:
@@ -146,29 +153,44 @@ def atomic_write_json(path: Path, value: Any) -> None:
             os.unlink(temp_name)
 
 
-def credential_path(value: str | None) -> Path:
-    return Path(value).expanduser() if value else skill_root() / "creds.json"
+def load_api_key() -> str:
+    """Return the Artificial Analysis key: environment first, then 1Password.
 
-
-def load_api_key(path: Path | None = None) -> str:
-    env_key = os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY")
+    There is deliberately no credentials-file fallback: a key file beside the
+    skill ends up committed or synced with the plugin. The key is never printed.
+    """
+    env_key = os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY", "").strip()
     if env_key:
         return env_key
-    path = path or credential_path(None)
-    if not path.exists():
+    op_ref = os.environ.get("ARTIFICIAL_ANALYSIS_OP_REF", "").strip() or DEFAULT_OP_REF
+    op_bin = shutil.which("op")
+    if op_bin is None:
         raise RuntimeError(
-            f"No Artificial Analysis key found. Set ARTIFICIAL_ANALYSIS_API_KEY "
-            f"or provide --credentials {path}."
+            "No Artificial Analysis key found. Set ARTIFICIAL_ANALYSIS_API_KEY in the "
+            "environment (on a machine with the 1Password CLI, `op read` is tried instead)."
         )
     try:
-        payload = read_json(path)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Credentials file is not valid JSON: {path}") from exc
-    for key_name in ("token", "api_key", "apiKey", "key"):
-        value = payload.get(key_name) if isinstance(payload, dict) else None
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    raise RuntimeError(f"Credentials file has no token/api_key field: {path}")
+        result = subprocess.run(
+            [op_bin, "read", "--no-newline", op_ref],
+            capture_output=True,
+            text=True,
+            timeout=OP_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"`op read {op_ref}` did not finish within {OP_TIMEOUT_SECONDS}s "
+            "(is 1Password locked?). Set ARTIFICIAL_ANALYSIS_API_KEY instead."
+        ) from exc
+    key = result.stdout.strip()
+    if result.returncode != 0 or not key:
+        # op's stderr names the failing reference, never the secret.
+        detail = result.stderr.strip() or f"exit status {result.returncode}"
+        raise RuntimeError(
+            f"`op read {op_ref}` failed: {detail}. Set ARTIFICIAL_ANALYSIS_API_KEY, "
+            "or point ARTIFICIAL_ANALYSIS_OP_REF at the item holding the key."
+        )
+    return key
 
 
 def cache_file(cache_dir: Path) -> Path:
@@ -225,7 +247,6 @@ def fetch_all_pages(key: str, *, timeout: float) -> Any:
 def fetch_models(
     *,
     cache_dir: Path | None = None,
-    credentials: Path | None = None,
     max_age: float = DEFAULT_MAX_AGE,
     refresh: bool = False,
     stale_if_error: bool = True,
@@ -244,7 +265,7 @@ def fetch_models(
         }
 
     try:
-        key = load_api_key(credentials)
+        key = load_api_key()
         payload = fetch_all_pages(key, timeout=timeout)
         payload_data(payload)
         envelope = {
@@ -569,7 +590,6 @@ def rank_rows(args: argparse.Namespace) -> list[dict[str, Any]]:
         raise RuntimeError("--available-only requires --runtime codex, claude, or all")
     payload, _ = fetch_models(
         cache_dir=Path(args.cache_dir).expanduser() if args.cache_dir else None,
-        credentials=Path(args.credentials).expanduser() if args.credentials else None,
         max_age=args.max_age,
         refresh=args.refresh,
         stale_if_error=not args.no_stale_if_error,
@@ -645,7 +665,6 @@ def discover_command(args: argparse.Namespace) -> None:
 def fetch_command(args: argparse.Namespace) -> None:
     payload, info = fetch_models(
         cache_dir=Path(args.cache_dir).expanduser() if args.cache_dir else None,
-        credentials=Path(args.credentials).expanduser() if args.credentials else None,
         max_age=args.max_age,
         refresh=args.refresh,
         stale_if_error=not args.no_stale_if_error,
@@ -657,8 +676,10 @@ def fetch_command(args: argparse.Namespace) -> None:
 
 
 def add_fetch_options(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--cache-dir", help="Cache directory; defaults to <skill>/.cache")
-    parser.add_argument("--credentials", help="JSON credentials file; defaults to <skill>/creds.json")
+    parser.add_argument(
+        "--cache-dir",
+        help="Cache directory; defaults to $MODEL_SELECTION_CACHE_DIR, else $XDG_CACHE_HOME/model-selection or ~/.cache/model-selection",
+    )
     parser.add_argument("--max-age", type=float, default=DEFAULT_MAX_AGE, help="Use cache for this many seconds")
     parser.add_argument("--refresh", action="store_true", help="Force a network fetch")
     parser.add_argument("--no-stale-if-error", action="store_true", help="Fail instead of using stale cache on fetch errors")

@@ -1,0 +1,10 @@
+{
+  "name": "model-selection",
+  "description": "Compare language models on Artificial Analysis benchmarks, price, speed, and task fit, and hold the facts behind Craig's agent routes (proxy, effort mechanics, context limits, evidence)",
+  "author": {
+    "name": "hughescr",
+    "url": "https://github.com/hughescr"
+  },
+  "repository": "https://github.com/hughescr/model-selection",
+  "license": "MIT"
+}

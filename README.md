@@ -2,7 +2,15 @@
 Why? So subagents can better select models based on real data.
 
 How? It uses Artificial Analysis' API (sorry, you need to sign up for an account, but it's free)
-This caches the API calls on a daily basis, so it doesn't blow the 100 req/day free tier limit. You're good.
+This caches the API calls on a daily basis (in `~/.cache/model-selection/`, or `$MODEL_SELECTION_CACHE_DIR`), so it
+doesn't blow the 100 req/day free tier limit. You're good.
+
+This fork (hughescr/model-selection) is packaged as a Claude Code plugin: the skill lives in `skills/model-selection/`
+with its script and references, and `.claude-plugin/plugin.json` sits at the root. It also holds the facts behind the
+agent routes in hughescr/claude-code-config; the Claude routes it names are that repo's `craig-core:*` plugin agents.
+
+The original was one-shotted by tkellogg; the prompt below is kept as its origin story. The `creds.json` it mentions is
+gone: see Credentials.
 
 I one-shotted this in Codex with `gpt-5.6-luna/xhigh` using the following prompt:
 
@@ -25,21 +33,31 @@ I one-shotted this in Codex with `gpt-5.6-luna/xhigh` using the following prompt
 > k, i'm excited to see what you come up with
 
 # Install
-Just clone the repo into your skills folder:
+As a plugin, from the marketplace in hughescr/claude-code-config:
 
-```bash
-cd ~/.claude/skills
-
-# Clone
-git clone git@github.com:tkellogg/model-selection.git
+```
+/plugin marketplace add hughescr/claude-code-config
+/plugin install model-selection@craigs-claude-plugins
 ```
 
-If you use two agents, you can symlink it to the other:
+To try local, unpushed changes from a clone, load the clone directly for one session:
 
 ```bash
-cd ~/.codex/skills
-
-ln -s ../../.claude/skills/model-selection model-selection
+claude --plugin-dir ~/code/hughescr/model-selection
 ```
 
+Do not clone it into `~/.claude/skills/`: a directory there with a plugin manifest auto-loads as
+`model-selection@skills-dir`, a second copy beside the installed plugin.
+
+For Codex, symlink the skill directory itself:
+
+```bash
+ln -s ~/code/hughescr/model-selection/skills/model-selection ~/.codex/skills/model-selection
+```
+
+# Credentials
+The script reads the Artificial Analysis key from `ARTIFICIAL_ANALYSIS_API_KEY`. If that is unset and the 1Password
+CLI `op` is on PATH, it runs `op read "$ARTIFICIAL_ANALYSIS_OP_REF"` (default
+`op://Private/Artificial Analysis/credential`). There is no credentials file: a key file beside the skill would be
+committed or synced with the plugin.
 

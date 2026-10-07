@@ -1,7 +1,7 @@
-creds.json
 .cache/
 __pycache__/
 *.pyc
 
-# Create a free account and set the API key here
+# The key comes from ARTIFICIAL_ANALYSIS_API_KEY or `op read`; a stray key file must never be committed.
 creds.json
+.env
