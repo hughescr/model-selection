@@ -13,24 +13,32 @@ For a routine spawn or verifier choice covered by the routing and cross-family p
 
 ## Local gateway routes
 
-The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription. The `deepseek-*` routes reach DeepSeek's Anthropic-compatible endpoint over the same proxy and spend a prepaid DeepSeek API balance, so they are the only metered routes. The Claude route agents ship in the `craig-core` plugin (`craig-core:<route>`); the `gpt-*` and `deepseek-*` route agents live in `~/.claude/agents/` on Craig's Mac only. When these routes count as available, and the Claude-only fallback when they do not, is the Route availability rule in CLAUDE.md. This skill's `agents/` directory is a Codex interface manifest, not a route directory — do not define routes here.
+The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:8317`, billed to the Codex subscription. The `deepseek-*` routes reach DeepSeek's Anthropic-compatible endpoint over the same proxy and spend a prepaid DeepSeek API balance, so they are the only metered routes. There is one route agent per model, and every `Agent` call passes `effort` (written "`route` @ `effort`", e.g. `craig-core:opus` @ `high`). The Claude route agents (`craig-core:opus`, `craig-core:sonnet`, `craig-core:haiku`, `craig-core:fable`) ship in the `craig-core` plugin; the `gpt-*` and `deepseek-*` route agents live in `~/.claude/agents/` on Craig's Mac only. When these routes count as available, and the Claude-only fallback when they do not, is the Route availability rule in CLAUDE.md. This skill's `agents/` directory is a Codex interface manifest, not a route directory — do not define routes here.
 
-| Route | Model name sent | Peer Claude route | Route effort |
+| Route | Model name sent | Peer Claude route | Allowed efforts |
 |---|---|---|---|
-| `gpt-astra-medium`, `gpt-astra-high`, `gpt-astra-xhigh` | `astra-medium`, `astra-high`, `astra-xhigh` (GPT-6 Astra) | `craig-core:opus-high`, `craig-core:opus-xhigh` | `medium`, `high`, `xhigh` |
-| `gpt-sol-high`, `gpt-sol-xhigh` | `sol-high`, `sol-xhigh` (GPT-6.1 Sol) | `craig-core:sonnet-high` | `high`, `xhigh` |
-| `gpt-sol-medium` | `sol-medium` (GPT-6.1 Sol) | `craig-core:sonnet-high` | `medium` |
-| `gpt-luna-low`, `gpt-luna-medium` | `luna-low`, `luna-medium` (GPT-6 Luna) | `craig-core:haiku-low` | `low`, `medium` |
-| `deepseek-flash-low`, `-medium`, `-high` | `deepseek-flash` (V4.1 Flash) plus frontmatter effort | `craig-core:haiku-*`, `craig-core:sonnet-medium`, `craig-core:sonnet-high` | `low`, `medium`, `high` |
-| `deepseek-v4-pro-low`, `-medium`, `-high` | `deepseek-v4-pro` (V4 Pro 0813) plus frontmatter effort; no image input | `craig-core:sonnet-medium`, `craig-core:opus-medium`, `craig-core:opus-high` | `low`, `medium`, `high` |
+| `gpt-astra` | `astra` (GPT-6 Astra) | `craig-core:opus` @ `high`, `craig-core:opus` @ `xhigh` | `medium`, `high`, `xhigh` |
+| `gpt-sol` | `sol` (GPT-6.1 Sol) | `craig-core:sonnet` @ `high` | `medium`, `high`, `xhigh` |
+| `gpt-luna` | `luna` (GPT-6 Luna) | `craig-core:haiku` @ `low` | `low`, `medium` |
+| `deepseek-flash` | `deepseek-flash` (V4.1 Flash) | `craig-core:haiku` (at `low`), `craig-core:sonnet` @ `medium` (at `medium`), `craig-core:sonnet` @ `high` (at `high`) | `low`, `medium`, `high` |
+| `deepseek-v4-pro` | `deepseek-v4-pro` (V4 Pro 0813); no image input | `craig-core:sonnet` @ `medium` (at `low`), `craig-core:opus` @ `medium` (at `medium`), `craig-core:opus` @ `high` (at `high`) | `low`, `medium`, `high` |
+
+Effort mechanics (measured on Claude Code 2.1.306, 2026-10-21):
+
+- **The Agent tool's `effort` parameter** (`low|medium|high|xhigh|max`) reaches the API as `output_config.effort`. Precedence: Agent `effort` > agent frontmatter `effort` > parent session effort. A forgotten parameter silently inherits the parent's effort, which is why CLAUDE.md requires it; a `craig-core` PreToolUse hook enforces it.
+- **The Agent `model` parameter accepts only `sonnet|opus|haiku|fable`.** Any other string, including a GPT alias or a full Claude model ID, fails with `InputValidationError`. A non-Claude model therefore needs an agent file whose frontmatter `model:` names it, which is why the `gpt-*` and `deepseek-*` routes are agent files.
+- **`utraque` resolves effort as model-name suffix > body `output_config.effort` > default**, and logs `effort_source` (`suffix|body|default`) beside `effort_requested` and `effort_applied`. Use bare aliases (`sol`, `astra`, `luna`) so the Agent parameter decides; a suffixed alias (`sol-high`) would override it.
+- **The Codex leg clamps effort to the model's live catalog levels**, and sends it unclamped when the catalog is unavailable. Check `effort_applied` in the log line, not the request.
+- **The DeepSeek leg maps** `low`→`low`, `medium`→`high`, `high`→`high`, `xhigh`→`high`, `max`→`max`, because DeepSeek accepts only `low`, `high`, and `max` ([thinking mode](https://api-docs.deepseek.com/guides/thinking_mode)). So `medium` and `high` run identically there, and `xhigh` buys nothing. DeepSeek model names take no suffix.
+- **`utraque` translates Claude Code's mid-conversation `tool_addition` and `tool_removal` blocks** for both the GPT and DeepSeek legs: it hoists added tools into the tools list and honors removals.
 
 Facts that constrain these routes:
 
 - **Context is 272k tokens on the Codex leg**, whatever the API docs advertise. Never plan a larger task onto a `gpt-*` route. DeepSeek windows are unverified.
 - **Keep luna off long context.** Its long-context recall is poor, so it degrades quietly rather than failing.
-- **On the Codex leg a suffixed model name is the only way to set effort.** Frontmatter `effort` never reaches that leg; it is bookkeeping for the CLAUDE.md pin rule. A bare alias silently drops to the proxy default (`low` for sol), so never "tidy" agent files back to bare aliases. Confirm with the proxy's per-request log line (`client_model`, `upstream_model`, `effort`).
-- **On the DeepSeek leg the model name must be exact** (`deepseek-flash`, `deepseek-v4-pro`; a suffix is rejected) and effort travels in the frontmatter key. The proxy forwards it unvalidated, so a value DeepSeek does not honor fails or degrades upstream.
-- **No `ultra` route.** `ultra` is not a valid frontmatter effort; reach it, if ever, by naming `sol-ultra` directly (unverified for GPT-6.1 Sol).
+- **Route agent files carry the bare model name and no `effort` key.** The Agent `effort` parameter is the only effort setting; confirm what a request ran with from the proxy's per-request log line (`client_model`, `upstream_model`, `effort_source`, `effort_requested`, `effort_applied`).
+- **On the DeepSeek leg the model name must be exact** (`deepseek-flash`, `deepseek-v4-pro`; a suffix is rejected).
+- **No `ultra` route.** The Agent `effort` enum stops at `max`. Reaching `ultra`, if ever, needs a dedicated agent file whose `model:` is the suffixed name `sol-ultra` (unverified for GPT-6.1 Sol).
 - **Bare aliases float to the newest model with that codename**; pinned names (`sol-6`) keep older ones. The backend withholds new models from older Codex CLI clients, so check `/v1/models` before assuming which model a route runs.
 - Do not route to `gpt-5.3-codex-spark` or `codex-auto-review`.
 
@@ -54,23 +62,23 @@ Artificial Analysis Intelligence Index @ cost per index task, as of 2026-10-07. 
 | DeepSeek V4.1 Flash | — | — | — | — | ~39.5 @ ~$0.28 |
 | DeepSeek V4 Pro 0813 | — | — | — | — | ~36 @ ~$0.68 |
 
-- **Haiku prices by per-request prompt length:** up to 100k tokens $0.10/$0.50 per 1M input/output; above 100k every category rises 5x. That drives the CLAUDE.md rule sending prompts expected to stay under 100k to the haiku routes.
-- **Haiku's long-context recall is unmeasured**, so prompts above 100k stay on `craig-core:sonnet-medium` until it is measured.
+- **Haiku prices by per-request prompt length:** up to 100k tokens $0.10/$0.50 per 1M input/output; above 100k every category rises 5x. That drives the CLAUDE.md rule sending prompts expected to stay under 100k to `craig-core:haiku`.
+- **Haiku's long-context recall is unmeasured**, so prompts above 100k stay on `craig-core:sonnet` @ `medium` until it is measured.
 - **AA's Sonnet costs predate the 2026-10-07 cache-read cut** ($0.20 to $0.10 per 1M), so they overstate Sonnet's cost until AA re-measures.
-- **No `sonnet-xhigh` or `sonnet-max` route:** `craig-core:opus-high` dominates Sonnet xhigh, and Opus xhigh ties Sonnet max at under half the cost.
-- **No `opus-max` route:** Opus xhigh beats max on Terminal-Bench at about 1.7x lower cost.
+- **No `craig-core:sonnet` @ `xhigh` or @ `max`:** `craig-core:opus` @ `high` dominates Sonnet xhigh, and `craig-core:opus` @ `xhigh` ties Sonnet max at under half the cost.
+- **No `craig-core:opus` @ `max`:** Opus xhigh beats max on Terminal-Bench at about 1.7x lower cost.
 
 ## Cross-family verification
 
 The pairing table with its Claude-only columns, the tiebreak, and the security override live in CLAUDE.md. In addition, when cross-family routes are available:
 
-- If `gpt-sol-high` fails as the challenger for `craig-core:sonnet-high` or `craig-core:opus-medium`, use `gpt-astra-medium`, escalating to `gpt-astra-high`.
-- `craig-core:sonnet-high` is also an acceptable routine challenger for `gpt-sol-medium`.
-- DeepSeek Flash is a fit challenger when metered-cheap is the right price for a second opinion.
+- If `gpt-sol` @ `high` fails as the challenger for `craig-core:sonnet` @ `high` or `craig-core:opus` @ `medium`, use `gpt-astra` @ `medium`, escalating to `gpt-astra` @ `high`.
+- `craig-core:sonnet` @ `high` is also an acceptable routine challenger for `gpt-sol` @ `medium`.
+- `deepseek-flash` is a fit challenger when metered-cheap is the right price for a second opinion.
 
 ### Security routing
 
-Why CLAUDE.md sends security work — doing it and reviewing it — to `gpt-astra-*` and, Claude-only, to `craig-core:opus-high`/`craig-core:opus-xhigh` but never Fable or Haiku: Anthropic re-routes most cybersecurity tasks on Opus and Fable to an older Opus, and higher-risk ones on Sonnet visibly fall back to an older Sonnet, so no Claude route is full-strength for security and a Claude route reviewing GPT's security work may be running the older model. Routine bug finding and fixing in normal development is unaffected. Haiku has no fallback: a cyber-classifier decline returns `stop_reason: "refusal"` and stays declined, so `craig-core:haiku-*` routes never run security work. A Claude-only security check is reported as same-family and as possibly run on an older Opus.
+Why CLAUDE.md sends security work — doing it and reviewing it — to `gpt-astra` and, Claude-only, to `craig-core:opus` @ `high` or @ `xhigh` but never `craig-core:fable` or `craig-core:haiku`: Anthropic re-routes most cybersecurity tasks on Opus and Fable to an older Opus, and higher-risk ones on Sonnet visibly fall back to an older Sonnet, so no Claude route is full-strength for security and a Claude route reviewing GPT's security work may be running the older model. Routine bug finding and fixing in normal development is unaffected. Haiku has no fallback: a cyber-classifier decline returns `stop_reason: "refusal"` and stays declined, so `craig-core:haiku` never runs security work. A Claude-only security check is reported as same-family and as possibly run on an older Opus.
 
 ## Slow-path workflow
 
