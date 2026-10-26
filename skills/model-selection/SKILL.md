@@ -21,7 +21,7 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 | `gpt-sol` | `sol` (GPT-6.1 Sol) | `craig-core:sonnet` @ `high` | `medium`, `high`, `xhigh` |
 | `gpt-luna` | `luna` (GPT-6 Luna) | `craig-core:haiku` @ `low` | `low`, `medium` |
 | `gpt-terra` | `terra` (GPT-6.1 Terra) | `craig-core:haiku` @ `xhigh` (at `medium`), `craig-core:haiku` @ `max` (at `high`) | `medium`, `high` |
-| `deepseek-flash` | `deepseek-flash` (V4.1 Flash) | `craig-core:haiku` (at `low`), `craig-core:sonnet` @ `medium` (at `medium`), `craig-core:sonnet` @ `high` (at `high`) | `low`, `medium`, `high` |
+| `deepseek-flash` | `deepseek-flash` (V4.1 Flash 1017) | `craig-core:haiku` (at `low`), `craig-core:sonnet` @ `medium` (at `medium`), `craig-core:sonnet` @ `high` (at `high`) | `low`, `medium`, `high` |
 | `deepseek-v4-pro` | `deepseek-v4-pro` (V4 Pro 0813); no image input | `craig-core:sonnet` @ `medium` (at `low`), `craig-core:opus` @ `medium` (at `medium`), `craig-core:opus` @ `high` (at `high`) | `low`, `medium`, `high` |
 
 Effort mechanics (measured on Claude Code 2.1.306, 2026-10-21):
@@ -62,9 +62,10 @@ Artificial Analysis Intelligence Index @ cost per index task, as of 2026-10-26. 
 | GPT-6 Astra | 46 @ $0.82 | 50 @ $1.54 | 51 @ $1.73 | 52 @ $2.31 | 53 @ $3.26 |
 | GPT-6.1 Terra | 36 @ $0.055 | 41 @ $0.095 | 44 @ $0.13 | 45 @ $0.19 | 48 @ $0.40 |
 | GPT-6 Luna | 22 @ $0.0045 | 30 @ $0.018 | 33 @ $0.029 | 35 @ $0.042 | 38 @ $0.068 |
-| DeepSeek V4.1 Flash | — | — | — | — | ~39.5 @ ~$0.28 |
+| DeepSeek V4.1 Flash 1017 | — | — | — | — | 45 @ $0.26 |
 | DeepSeek V4 Pro 0813 | — | — | — | — | ~36 @ ~$0.68 |
 
+- **DeepSeek Flash is measured only at `max`,** which the route never runs (the DeepSeek leg sends `low` or `high`), so its capability at the route's efforts is unmeasured.
 - **Haiku prices by per-request prompt length:** up to 100k tokens $0.10/$0.50 per 1M input/output; above 100k every category rises 5x. That drives the CLAUDE.md rule sending prompts expected to stay under 100k to `craig-core:haiku`.
 - **Haiku's long-context recall is unmeasured**, so prompts above 100k stay on `craig-core:sonnet` @ `medium` until it is measured.
 - **No `craig-core:sonnet` @ `xhigh` or @ `max`:** `craig-core:opus` @ `high` dominates Sonnet xhigh, and `craig-core:opus` @ `xhigh` ties Sonnet max at about 63% of the cost.
