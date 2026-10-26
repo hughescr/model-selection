@@ -83,6 +83,8 @@ The pairing table with its Claude-only columns, the tiebreak, and the security o
 
 Why CLAUDE.md sends security work — doing it and reviewing it — to `gpt-astra` and, Claude-only, to `craig-core:opus` @ `high` or @ `xhigh` but never `craig-core:fable` or `craig-core:haiku`: Anthropic re-routes most cybersecurity tasks on Opus and Fable to an older Opus, and higher-risk ones on Sonnet visibly fall back to an older Sonnet, so no Claude route is full-strength for security and a Claude route reviewing GPT's security work may be running the older model. Routine bug finding and fixing in normal development is unaffected. Haiku has no fallback: a cyber-classifier decline returns `stop_reason: "refusal"` and stays declined, so `craig-core:haiku` never runs security work. A Claude-only security check is reported as same-family and as possibly run on an older Opus.
 
+Anthropic's and OpenAI's classifiers also over-refuse defensive work on Craig's own systems: sysadmin tasks such as CA certificate repair, and network scans for insecure devices, have drawn refusals from both families. DeepSeek filters less, so CLAUDE.md falls back to `deepseek-flash` @ `high` when both refuse. Flash rather than `deepseek-v4-pro`, because Flash 1017 is the stronger DeepSeek model (AA index 45 vs 36 at `max`). The leg is a metered third-party API: send only what the task needs, never private keys or credentials.
+
 ## Slow-path workflow
 
 1. **Discover** only the affected runtime, and only when availability, an alias, or an explicit selection is unresolved:
