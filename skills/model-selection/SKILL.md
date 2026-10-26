@@ -20,6 +20,7 @@ The `gpt-*` routes reach OpenAI models over the `utraque` proxy on `127.0.0.1:83
 | `gpt-astra` | `astra` (GPT-6 Astra) | `craig-core:opus` @ `high`, `craig-core:opus` @ `xhigh` | `medium`, `high`, `xhigh` |
 | `gpt-sol` | `sol` (GPT-6.1 Sol) | `craig-core:sonnet` @ `high` | `medium`, `high`, `xhigh` |
 | `gpt-luna` | `luna` (GPT-6 Luna) | `craig-core:haiku` @ `low` | `low`, `medium` |
+| `gpt-terra` | `terra` (GPT-6.1 Terra) | `craig-core:haiku` @ `xhigh` (at `medium`), `craig-core:haiku` @ `max` (at `high`) | `medium`, `high` |
 | `deepseek-flash` | `deepseek-flash` (V4.1 Flash) | `craig-core:haiku` (at `low`), `craig-core:sonnet` @ `medium` (at `medium`), `craig-core:sonnet` @ `high` (at `high`) | `low`, `medium`, `high` |
 | `deepseek-v4-pro` | `deepseek-v4-pro` (V4 Pro 0813); no image input | `craig-core:sonnet` @ `medium` (at `low`), `craig-core:opus` @ `medium` (at `medium`), `craig-core:opus` @ `high` (at `high`) | `low`, `medium`, `high` |
 
@@ -27,7 +28,7 @@ Effort mechanics (measured on Claude Code 2.1.306, 2026-10-21):
 
 - **The Agent tool's `effort` parameter** (`low|medium|high|xhigh|max`) reaches the API as `output_config.effort`. Precedence: Agent `effort` > agent frontmatter `effort` > parent session effort. A forgotten parameter silently inherits the parent's effort, which is why CLAUDE.md requires it; a `craig-core` PreToolUse hook enforces it.
 - **The Agent `model` parameter accepts only `sonnet|opus|haiku|fable`.** Any other string, including a GPT alias or a full Claude model ID, fails with `InputValidationError`. A non-Claude model therefore needs an agent file whose frontmatter `model:` names it, which is why the `gpt-*` and `deepseek-*` routes are agent files.
-- **`utraque` resolves effort as model-name suffix > body `output_config.effort` > default**, and logs `effort_source` (`suffix|body|default`) beside `effort_requested` and `effort_applied`. Use bare aliases (`sol`, `astra`, `luna`) so the Agent parameter decides; a suffixed alias (`sol-high`) would override it.
+- **`utraque` resolves effort as model-name suffix > body `output_config.effort` > default**, and logs `effort_source` (`suffix|body|default`) beside `effort_requested` and `effort_applied`. Use bare aliases (`sol`, `astra`, `luna`, `terra`) so the Agent parameter decides; a suffixed alias (`sol-high`) would override it.
 - **The Codex leg clamps effort to the model's live catalog levels**, and sends it unclamped when the catalog is unavailable. Check `effort_applied` in the log line, not the request.
 - **The DeepSeek leg maps** `low`→`low`, `medium`→`high`, `high`→`high`, `xhigh`→`high`, `max`→`max`, because DeepSeek accepts only `low`, `high`, and `max` ([thinking mode](https://api-docs.deepseek.com/guides/thinking_mode)). So `medium` and `high` run identically there, and `xhigh` buys nothing. DeepSeek model names take no suffix.
 - **`utraque` translates Claude Code's mid-conversation `tool_addition` and `tool_removal` blocks** for both the GPT and DeepSeek legs: it hoists added tools into the tools list and honors removals.
@@ -36,6 +37,7 @@ Facts that constrain these routes:
 
 - **Context is 272k tokens on the Codex leg**, whatever the API docs advertise. Never plan a larger task onto a `gpt-*` route. DeepSeek windows are unverified.
 - **Keep luna off long context.** Its long-context recall is poor, so it degrades quietly rather than failing.
+- **`gpt-terra` is provisional.** AA has published no coding or agentic sub-index and no long-context recall for it, and AA lists a 1M context although the Codex leg caps at 272k. Keep prompts under 100k tokens until recall is measured, and check quota burn and `effort_applied` in the proxy log before promoting it.
 - **Route agent files carry the bare model name and no `effort` key.** The Agent `effort` parameter is the only effort setting; confirm what a request ran with from the proxy's per-request log line (`client_model`, `upstream_model`, `effort_source`, `effort_requested`, `effort_applied`).
 - **On the DeepSeek leg the model name must be exact** (`deepseek-flash`, `deepseek-v4-pro`; a suffix is rejected).
 - **No `ultra` route.** The Agent `effort` enum stops at `max`. Reaching `ultra`, if ever, needs a dedicated agent file whose `model:` is the suffixed name `sol-ultra` (unverified for GPT-6.1 Sol).
@@ -48,24 +50,24 @@ For availability prefer the proxy's own state: `GET /healthz` reports Codex auth
 
 ### Intelligence-cost snapshot
 
-Artificial Analysis Intelligence Index @ cost per index task, as of 2026-10-07. `~` marks a chart reading; `—` is unpublished. AA's effort names are its own settings. Cost is metered only on the DeepSeek leg; on the subscription legs read it as quota burn.
+Artificial Analysis Intelligence Index @ cost per index task, as of 2026-10-26. `~` marks a chart reading; `—` is unpublished. AA's effort names are its own settings. Cost is metered only on the DeepSeek leg; on the subscription legs read it as quota burn.
 
 | Model | low | medium | high | xhigh | max |
 |---|---|---|---|---|---|
 | Claude Opus 5.5 | 42 @ $0.55 | 51 @ $1.34 | 54 @ $1.82 | 56 @ $3.46 | 58 @ $5.98 |
-| Claude Sonnet 5.5 | 36 @ $0.41 | 41 @ $0.59 | 47 @ $1.08 | 52 @ $2.74 | 56 @ $7.62 |
-| Claude Haiku 5.5 | 29 | 34 | 38 | 41 @ $0.12 | 43 @ $0.21 |
-| Claude Fable 5.1 | 47 | 49 @ ~$3.2 | 51 | 53 | 53 @ $7.63 |
+| Claude Sonnet 5.5 | 36 @ $0.35 | 41 @ $0.48 | 47 @ $0.88 | 52 @ $2.01 | 56 @ $5.46 |
+| Claude Haiku 5.5 | 30 @ $0.025 | 35 @ $0.047 | 38 @ $0.079 | 41 @ $0.12 | 43 @ $0.21 |
+| Claude Fable 5.1 | 47 @ $2.37 | 49 @ $2.98 | 51 @ $3.91 | 53 @ $5.98 | 53 @ $7.63 |
 | GPT-6.1 Sol | 42 @ $0.13 | 48 @ $0.21 | 50 @ $0.32 | 51 @ $0.39 | 52 @ $0.72 |
-| GPT-6 Astra | ~46 @ ~$0.8 | ~49.5 @ ~$1.55 | ~51 @ ~$1.75 | ~52.5 @ ~$2.35 | ~53 @ ~$3.3 |
-| GPT-6 Luna | ~21 @ ~$0.006 | ~29.5 @ ~$0.018 | ~32 @ ~$0.029 | ~34 @ ~$0.043 | ~37.5 @ ~$0.068 |
+| GPT-6 Astra | 46 @ $0.82 | 50 @ $1.54 | 51 @ $1.73 | 52 @ $2.31 | 53 @ $3.26 |
+| GPT-6.1 Terra | 36 @ $0.055 | 41 @ $0.095 | 44 @ $0.13 | 45 @ $0.19 | 48 @ $0.40 |
+| GPT-6 Luna | 22 @ $0.0045 | 30 @ $0.018 | 33 @ $0.029 | 35 @ $0.042 | 38 @ $0.068 |
 | DeepSeek V4.1 Flash | — | — | — | — | ~39.5 @ ~$0.28 |
 | DeepSeek V4 Pro 0813 | — | — | — | — | ~36 @ ~$0.68 |
 
 - **Haiku prices by per-request prompt length:** up to 100k tokens $0.10/$0.50 per 1M input/output; above 100k every category rises 5x. That drives the CLAUDE.md rule sending prompts expected to stay under 100k to `craig-core:haiku`.
 - **Haiku's long-context recall is unmeasured**, so prompts above 100k stay on `craig-core:sonnet` @ `medium` until it is measured.
-- **AA's Sonnet costs predate the 2026-10-07 cache-read cut** ($0.20 to $0.10 per 1M), so they overstate Sonnet's cost until AA re-measures.
-- **No `craig-core:sonnet` @ `xhigh` or @ `max`:** `craig-core:opus` @ `high` dominates Sonnet xhigh, and `craig-core:opus` @ `xhigh` ties Sonnet max at under half the cost.
+- **No `craig-core:sonnet` @ `xhigh` or @ `max`:** `craig-core:opus` @ `high` dominates Sonnet xhigh, and `craig-core:opus` @ `xhigh` ties Sonnet max at about 63% of the cost.
 - **No `craig-core:opus` @ `max`:** Opus xhigh beats max on Terminal-Bench at about 1.7x lower cost.
 
 ## Cross-family verification
